@@ -11,6 +11,7 @@ import {
   Dimensions,
   Modal,
   FlatList,
+  Platform,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { COLORS } from '../constants/theme';
@@ -593,41 +594,83 @@ export default function ListingDetailScreen({ navigation, route }) {
           type={datePickerType}
         />
         {/* Guest Picker Modal */}
-        <Modal visible={showGuestPicker} transparent animationType="fade">
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', justifyContent: 'center', alignItems: 'center' }}>
-            <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 24, width: 280, alignItems: 'center' }}>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Select Guests</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+        <Modal
+          visible={showGuestPicker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowGuestPicker(false)}
+        >
+          {Platform.OS === 'android' ? (
+            <BlurView intensity={-10} tint="dark" style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '80%', alignItems: 'center' }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Select Number of Guests</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+                  <TouchableOpacity
+                    style={{ padding: 12, opacity: tempGuests <= 1 ? 0.5 : 1 }}
+                    onPress={() => tempGuests > 1 && setTempGuests(tempGuests - 1)}
+                    disabled={tempGuests <= 1}
+                  >
+                    <Feather name="minus" size={22} color={tempGuests <= 1 ? '#ccc' : COLORS.text} />
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 20, fontWeight: '600', marginHorizontal: 24, minWidth: 32, textAlign: 'center' }}>{tempGuests}</Text>
+                  <TouchableOpacity
+                    style={{ padding: 12, opacity: tempGuests >= (listing?.guests || 10) ? 0.5 : 1 }}
+                    onPress={() => tempGuests < (listing?.guests || 10) && setTempGuests(tempGuests + 1)}
+                    disabled={tempGuests >= (listing?.guests || 10)}
+                  >
+                    <Feather name="plus" size={22} color={tempGuests >= (listing?.guests || 10) ? '#ccc' : COLORS.text} />
+                  </TouchableOpacity>
+                </View>
                 <TouchableOpacity
-                  style={{ padding: 12, opacity: tempGuests <= 1 ? 0.5 : 1 }}
-                  onPress={() => tempGuests > 1 && setTempGuests(tempGuests - 1)}
-                  disabled={tempGuests <= 1}
+                  style={{ backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 32, marginBottom: 8 }}
+                  onPress={() => {
+                    setGuests(tempGuests);
+                    setShowGuestPicker(false);
+                  }}
                 >
-                  <Feather name="minus" size={22} color={tempGuests <= 1 ? '#ccc' : COLORS.text} />
+                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Done</Text>
                 </TouchableOpacity>
-                <Text style={{ fontSize: 20, fontWeight: '600', marginHorizontal: 24, minWidth: 32, textAlign: 'center' }}>{tempGuests}</Text>
-                <TouchableOpacity
-                  style={{ padding: 12, opacity: tempGuests >= (listing?.guests || 10) ? 0.5 : 1 }}
-                  onPress={() => tempGuests < (listing?.guests || 10) && setTempGuests(tempGuests + 1)}
-                  disabled={tempGuests >= (listing?.guests || 10)}
-                >
-                  <Feather name="plus" size={22} color={tempGuests >= (listing?.guests || 10) ? '#ccc' : COLORS.text} />
+                <TouchableOpacity onPress={() => setShowGuestPicker(false)}>
+                  <Text style={{ color: '#e11d48', fontWeight: 'bold', fontSize: 15 }}>Cancel</Text>
                 </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={{ backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 32, marginBottom: 8 }}
-                onPress={() => {
-                  setGuests(tempGuests);
-                  setShowGuestPicker(false);
-                }}
-              >
-                <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Done</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowGuestPicker(false)}>
-                <Text style={{ color: '#e11d48', fontWeight: 'bold', fontSize: 15 }}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+            </BlurView>
+          ) : (
+            <BlurView intensity={10} tint="dark" style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 24, width: '80%', alignItems: 'center' }}>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>Select Number of Guests</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 24 }}>
+                  <TouchableOpacity
+                    style={{ padding: 12, opacity: tempGuests <= 1 ? 0.5 : 1 }}
+                    onPress={() => tempGuests > 1 && setTempGuests(tempGuests - 1)}
+                    disabled={tempGuests <= 1}
+                  >
+                    <Feather name="minus" size={22} color={tempGuests <= 1 ? '#ccc' : COLORS.text} />
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 20, fontWeight: '600', marginHorizontal: 24, minWidth: 32, textAlign: 'center' }}>{tempGuests}</Text>
+                  <TouchableOpacity
+                    style={{ padding: 12, opacity: tempGuests >= (listing?.guests || 10) ? 0.5 : 1 }}
+                    onPress={() => tempGuests < (listing?.guests || 10) && setTempGuests(tempGuests + 1)}
+                    disabled={tempGuests >= (listing?.guests || 10)}
+                  >
+                    <Feather name="plus" size={22} color={tempGuests >= (listing?.guests || 10) ? '#ccc' : COLORS.text} />
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity
+                  style={{ backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 10, paddingHorizontal: 32, marginBottom: 8 }}
+                  onPress={() => {
+                    setGuests(tempGuests);
+                    setShowGuestPicker(false);
+                  }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Done</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowGuestPicker(false)}>
+                  <Text style={{ color: '#e11d48', fontWeight: 'bold', fontSize: 15 }}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </BlurView>
+          )}
         </Modal>
       </Modal>
     </View>

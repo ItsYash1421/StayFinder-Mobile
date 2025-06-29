@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform, StatusBar } from 'react-native';
 import { COLORS, getHeaderHeight, FONT_SIZES, getResponsiveSize, getShadow } from '../constants/theme';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+
+const ANDROID_EXTRA_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0;
 
 export default function AppHeader() {
   return (
@@ -29,7 +31,7 @@ const styles = StyleSheet.create({
   header: {
     width: '100%',
     backgroundColor: '#fff',
-    paddingTop: getHeaderHeight(),
+    paddingTop: getHeaderHeight() + ANDROID_EXTRA_TOP,
     paddingBottom: getResponsiveSize(10, 12, 14, 16),
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,

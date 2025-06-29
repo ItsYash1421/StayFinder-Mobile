@@ -1,7 +1,9 @@
+// const BASE_URL = 'http://localhost:5000'; // Local development
+// const BASE_URL = 'http://192.168.1.2:5000'; // Example LAN IP
+const BASE_URL = 'https://stayfinder-mobile.onrender.com'; // Production backend
+
 import axios from "axios";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-export const BASE_URL = "http://localhost:3000"; // Change to your backend URL
 
 export const api = axios.create({
   baseURL: BASE_URL,

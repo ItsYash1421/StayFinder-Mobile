@@ -184,24 +184,34 @@ function CustomTabBar({ state, descriptors, navigation }) {
               <Animated.View
                 style={[
                   styles.tabItem,
-                  isFocused && styles.tabItemActive,
                   {
                     transform: [{ scale: tabAnimations[route.name] }],
-                    shadowColor: isFocused ? COLORS.primary : "transparent",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: isFocused ? 0.3 : 0,
-                    shadowRadius: 8,
-                    elevation: isFocused ? 8 : 0,
+                    // Only apply shadow/elevation for iOS
+                    ...(Platform.OS === 'ios' && isFocused
+                      ? {
+                          shadowColor: COLORS.primary,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.3,
+                          shadowRadius: 8,
+                          elevation: 8,
+                        }
+                      : {
+                          shadowColor: 'transparent',
+                          shadowOffset: { width: 0, height: 0 },
+                          shadowOpacity: 0,
+                          shadowRadius: 0,
+                          elevation: 0,
+                        }),
                   },
                 ]}
               >
+                {/* Render icon and label for all tabs, no circle or background for selected */}
                 <Feather
                   name={iconName}
                   size={isFocused ? getResponsiveSize(28, 30, 32, 34) : getResponsiveSize(22, 24, 26, 28)}
                   color={isFocused ? COLORS.primary : COLORS.textMuted}
-                  style={{ marginBottom: 2 }}
                 />
-                <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>{label}</Text>
+                <Text style={[styles.tabLabel, isFocused ? { color: COLORS.primary, fontWeight: 'bold' } : null]}>{label}</Text>
               </Animated.View>
             </TouchableOpacity>
           );
@@ -889,25 +899,17 @@ const styles = StyleSheet.create({
   tabItem: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: getResponsiveSize(6, 8, 10, 12),
-    paddingHorizontal: getResponsiveSize(10, 12, 14, 16),
+    paddingVertical: Platform.OS === 'android' ? 0 : getResponsiveSize(6, 8, 10, 12),
+    paddingHorizontal: Platform.OS === 'android' ? 0 : getResponsiveSize(10, 12, 14, 16),
     borderRadius: getResponsiveSize(12, 14, 16, 18),
-    minWidth: getResponsiveSize(50, 55, 60, 65),
+    minWidth: Platform.OS === 'android' ? undefined : getResponsiveSize(50, 55, 60, 65),
     backgroundColor: "transparent",
     transition: "all 0.2s ease",
-  },
-  tabItemActive: {
-    backgroundColor: "rgba(59, 130, 246, 0.15)",
-    ...getShadow('lg'),
   },
   tabLabel: {
     fontSize: getResponsiveSize(10, 11, 12, 13),
     color: COLORS.textMuted,
     fontWeight: "500",
     marginTop: getResponsiveSize(2, 3, 4, 5),
-  },
-  tabLabelActive: {
-    color: COLORS.primary,
-    fontWeight: "600",
   },
 });

@@ -1,8 +1,10 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import React, { useContext } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
 import { COLORS, getResponsiveSize, FONT_SIZES, CARD_DIMENSIONS, getShadow } from '../constants/theme';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AuthContext } from '../context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 
 export default function PostCard({
   title,
@@ -19,6 +21,25 @@ export default function PostCard({
   onPress,
   style,
 }) {
+  const { user } = useContext(AuthContext);
+  const navigation = useNavigation();
+
+  const handleWishlistPress = (e) => {
+    e.stopPropagation();
+    if (!user) {
+      Alert.alert(
+        "Login Required",
+        "Login to add to your wishlist.",
+        [
+          { text: "Not Now", style: "cancel" },
+          { text: "Login Now", onPress: () => navigation.navigate('Login') }
+        ]
+      );
+      return;
+    }
+    onToggleWishlist();
+  };
+
   return (
     <TouchableOpacity style={[styles.card, style]} onPress={onPress} activeOpacity={0.9}>
       <View style={styles.imageWrapper}>
@@ -29,10 +50,7 @@ export default function PostCard({
         />
         <TouchableOpacity
           style={styles.wishlistBtn}
-          onPress={(e) => {
-            e.stopPropagation();
-            onToggleWishlist();
-          }}
+          onPress={handleWishlistPress}
           activeOpacity={0.8}
         >
           <Feather

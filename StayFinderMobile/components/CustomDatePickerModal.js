@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Feather } from '@expo/vector-icons';
 import { COLORS } from '../constants/theme';
@@ -16,11 +16,19 @@ export default function CustomDatePickerModal({
   return (
     <Modal
       visible={visible}
-      transparent={true}
-      animationType="slide"
+      transparent
+      animationType="fade"
       onRequestClose={onClose}
     >
-      <BlurView intensity={20} style={styles.modalOverlay}>
+      <View style={styles.overlay}>
+        {Platform.OS === 'ios' ? (
+          <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+        ) : (
+          <View style={styles.modalOverlay}>
+            <BlurView intensity={-10} tint="dark" style={StyleSheet.absoluteFill} />
+            <View style={styles.androidFrosted} />
+          </View>
+        )}
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
@@ -49,16 +57,27 @@ export default function CustomDatePickerModal({
             }}
           />
         </View>
-      </BlurView>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  androidFrosted: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0)',
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderWidth: 0.5,
   },
   modalContent: {
     backgroundColor: '#fff',

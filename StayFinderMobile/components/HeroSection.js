@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Modal, Animated, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Modal, Animated, Dimensions, Platform } from 'react-native';
 import { COLORS } from '../constants/theme';
 import CustomDatePickerModal from './CustomDatePickerModal';
 import { Feather } from '@expo/vector-icons';
@@ -226,58 +226,107 @@ export default function HeroSection({ onSearch }) {
         animationType="fade"
         onRequestClose={() => setShowGuestPicker(false)}
       >
-        <BlurView intensity={30} tint="dark" style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Number of Guests</Text>
-              <TouchableOpacity
+        {Platform.OS === 'android' ? (
+          <BlurView intensity={-10} tint="dark" style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Number of Guests</Text>
+                <TouchableOpacity
+                  onPress={() => setShowGuestPicker(false)}
+                  style={styles.closeButton}
+                >
+                  <Feather name="x" size={24} color={COLORS.text} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView contentContainerStyle={styles.guestListContainer} showsVerticalScrollIndicator={false}>
+                {[...Array(10)].map((_, i) => (
+                  <TouchableOpacity
+                    key={i + 1}
+                    style={[
+                      styles.guestOption,
+                      guests === i + 1 && styles.guestOptionSelected
+                    ]}
+                    onPress={() => {
+                      setGuests(i + 1);
+                      setShowGuestPicker(false);
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[
+                      styles.guestOptionLabel,
+                      guests === i + 1 && styles.guestOptionLabelSelected
+                    ]}>
+                      {i + 1} guest{i !== 0 ? 's' : ''}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              <TouchableOpacity 
+                style={{ 
+                  alignItems: 'center', 
+                  marginTop: 10, 
+                  paddingVertical: 10, 
+                  backgroundColor: COLORS.backgroundSecondary, 
+                  borderRadius: 8, 
+                  paddingHorizontal: 24 
+                }} 
                 onPress={() => setShowGuestPicker(false)}
-                style={styles.closeButton}
               >
-                <Feather name="x" size={24} color={COLORS.text} />
+                <Text style={{ color: COLORS.primary, fontWeight: 'bold', fontSize: 16 }}>Cancel</Text>
               </TouchableOpacity>
             </View>
-            <ScrollView contentContainerStyle={styles.guestListContainer} showsVerticalScrollIndicator={false}>
-              {[...Array(10)].map((_, i) => (
+          </BlurView>
+        ) : (
+          <BlurView intensity={30} tint="dark" style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Number of Guests</Text>
                 <TouchableOpacity
-                  key={i + 1}
-                  style={[
-                    styles.guestOption,
-                    guests === i + 1 && styles.guestOptionSelected
-                  ]}
-                  onPress={() => {
-                    setGuests(i + 1);
-                    setShowGuestPicker(false);
-                  }}
-                  activeOpacity={0.7}
+                  onPress={() => setShowGuestPicker(false)}
+                  style={styles.closeButton}
                 >
-                  <Text style={[
-                    styles.guestOptionLabel,
-                    guests === i + 1 && styles.guestOptionLabelSelected
-                  ]}>
-                    {i + 1} guest{i !== 0 ? 's' : ''}
-                  </Text>
-                  {guests === i + 1 && (
-                    <Feather name="check" size={20} color={COLORS.primary} />
-                  )}
+                  <Feather name="x" size={24} color={COLORS.text} />
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity 
-              style={{ 
-                alignItems: 'center', 
-                marginTop: 10, 
-                paddingVertical: 10, 
-                backgroundColor: COLORS.backgroundSecondary, 
-                borderRadius: 8, 
-                paddingHorizontal: 24 
-              }} 
-              onPress={() => setShowGuestPicker(false)}
-            >
-              <Text style={{ color: COLORS.primary, fontWeight: 'bold', fontSize: 16 }}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </BlurView>
+              </View>
+              <ScrollView contentContainerStyle={styles.guestListContainer} showsVerticalScrollIndicator={false}>
+                {[...Array(10)].map((_, i) => (
+                  <TouchableOpacity
+                    key={i + 1}
+                    style={[
+                      styles.guestOption,
+                      guests === i + 1 && styles.guestOptionSelected
+                    ]}
+                    onPress={() => {
+                      setGuests(i + 1);
+                      setShowGuestPicker(false);
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[
+                      styles.guestOptionLabel,
+                      guests === i + 1 && styles.guestOptionLabelSelected
+                    ]}>
+                      {i + 1} guest{i !== 0 ? 's' : ''}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+              <TouchableOpacity 
+                style={{ 
+                  alignItems: 'center', 
+                  marginTop: 10, 
+                  paddingVertical: 10, 
+                  backgroundColor: COLORS.backgroundSecondary, 
+                  borderRadius: 8, 
+                  paddingHorizontal: 24 
+                }} 
+                onPress={() => setShowGuestPicker(false)}
+              >
+                <Text style={{ color: COLORS.primary, fontWeight: 'bold', fontSize: 16 }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </BlurView>
+        )}
       </Modal>
     </View>
   );
@@ -394,23 +443,50 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   guestOption: {
-    paddingVertical: 10,
-    width: '100%',
+    flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    marginVertical: 2,
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    minWidth: 180,
   },
-  guestOptionText: {
-    fontSize: 16,
+  guestOptionSelected: {
+    backgroundColor: 'rgba(244,63,94,0.10)', // Soft primary color
+    borderColor: COLORS.primary,
+    borderWidth: 1.5,
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  guestOptionLabel: {
+    fontSize: 17,
     color: COLORS.text,
+    fontWeight: '500',
   },
-  guestModalClose: {
-    marginTop: 16,
+  guestOptionLabelSelected: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
+  },
+  guestCheckIcon: {
+    marginLeft: 12,
   },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  androidFrosted: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderColor: 'rgba(0,0,0,0.10)',
+    borderWidth: 0.5,
   },
   modalContent: {
     backgroundColor: '#fff',
@@ -437,12 +513,6 @@ const styles = StyleSheet.create({
   guestListContainer: {
     width: '100%',
     alignItems: 'center',
-  },
-  guestOptionSelected: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
-  },
-  guestOptionLabelSelected: {
-    fontWeight: 'bold',
   },
   waveContainer: {
     position: 'absolute',

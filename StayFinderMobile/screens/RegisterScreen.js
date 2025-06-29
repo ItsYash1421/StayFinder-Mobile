@@ -9,12 +9,16 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from 'react-native';
-import { COLORS } from '../constants/theme';
+import { COLORS, getHeaderHeight } from '../constants/theme';
 import { Feather } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import { api } from '../constants/api';
 import AppHeader from '../components/AppHeader';
+
+const ANDROID_EXTRA_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0;
+const HEADER_HEIGHT = getHeaderHeight() + ANDROID_EXTRA_TOP;
 
 export default function RegisterScreen({ navigation }) {
   const { login } = useContext(AuthContext);
@@ -80,7 +84,7 @@ export default function RegisterScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <AppHeader title="Register" showBack={true} />
-      <View style={{ height: 90 }} />
+      <View style={{ height: HEADER_HEIGHT }} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -240,20 +244,20 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingBottom: 40,
+    paddingBottom: 16,
   },
   content: {
     paddingHorizontal: 20,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 18,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     color: COLORS.text,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
@@ -263,7 +267,7 @@ const styles = StyleSheet.create({
   formContainer: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 24,
+    padding: 16,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -278,7 +282,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   errorText: {
     color: '#dc2626',
@@ -287,7 +291,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   label: {
     fontSize: 14,
@@ -348,10 +352,10 @@ const styles = StyleSheet.create({
   },
   registerButton: {
     backgroundColor: COLORS.primary,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: -5,
   },
   registerButtonDisabled: {
     opacity: 0.6,
@@ -363,7 +367,7 @@ const styles = StyleSheet.create({
   },
   loginContainer: {
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 12,
   },
   loginText: {
     fontSize: 16,

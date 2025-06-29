@@ -10,8 +10,9 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from "react-native";
-import { COLORS } from "../constants/theme";
+import { COLORS, getHeaderHeight } from "../constants/theme";
 import { Feather } from "@expo/vector-icons";
 import { AuthContext } from "../context/AuthContext";
 import { api } from "../constants/api";
@@ -21,6 +22,9 @@ import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 
 const redirectUri = AuthSession.makeRedirectUri({ useProxy: true });
+
+const ANDROID_EXTRA_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0;
+const HEADER_HEIGHT = getHeaderHeight() + ANDROID_EXTRA_TOP;
 
 export default function LoginScreen({ navigation }) {
   const { login } = useContext(AuthContext);
@@ -39,8 +43,8 @@ export default function LoginScreen({ navigation }) {
       "1085702517310-ruc0mnuai2roucks2i8e4ogh7jfn6i6v.apps.googleusercontent.com",
     iosClientId:
       "1085702517310-sbafv3ihnfvmnl2q9ni2rpieij66k4fu.apps.googleusercontent.com",
-    androidClientId: "YOUR_ANDROID_CLIENT_ID",
-    redirectUri,
+    androidClientId: "1085702517310-fm819crgb6nr797crvme0p0v0si8820s.apps.googleusercontent.com",
+    redirectUri:AuthSession.makeRedirectUri({ useProxy: true }),
   });
 
   useEffect(() => {
@@ -127,7 +131,7 @@ export default function LoginScreen({ navigation }) {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <AppHeader title="Login" showBack={true} />
-      <View style={{ height: 90 }} />
+      <View style={{ height: HEADER_HEIGHT }} />
 
       <ScrollView
         style={styles.scrollView}
@@ -292,7 +296,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingBottom: 40,
+    paddingBottom: 16,
   },
   content: {
     paddingHorizontal: 20,
@@ -301,13 +305,13 @@ const styles = StyleSheet.create({
   // Header styles
   header: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 18,
   },
   title: {
     fontSize: 28,
     fontWeight: "bold",
     color: COLORS.text,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
@@ -319,7 +323,7 @@ const styles = StyleSheet.create({
   formContainer: {
     backgroundColor: "#fff",
     borderRadius: 16,
-    padding: 24,
+    padding: 16,
     shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -334,7 +338,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   errorText: {
     color: "#dc2626",
@@ -343,7 +347,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   label: {
     fontSize: 14,
@@ -375,10 +379,10 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     backgroundColor: COLORS.primary,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderRadius: 12,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 4,
   },
   loginButtonDisabled: {
     opacity: 0.6,
@@ -393,7 +397,7 @@ const styles = StyleSheet.create({
   divider: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 24,
+    marginVertical: 12,
   },
   dividerLine: {
     flex: 1,
@@ -402,7 +406,7 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     color: COLORS.textMuted,
-top:10,
+    top:10,
     fontSize: 25,
     marginHorizontal: 16,
     fontWeight: "600",
@@ -419,7 +423,7 @@ top:10,
     top:1,
     paddingVertical: 16,
     backgroundColor: "#fff",
-    marginBottom: 24,
+    marginBottom: 8,
   },
   googleButtonDisabled: {
     opacity: 0.6,
@@ -450,7 +454,7 @@ top:10,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: "center",
-    marginBottom: 24,
+    marginTop: 8,
   },
   skipButtonText: {
     color: COLORS.text,
@@ -461,6 +465,7 @@ top:10,
   // Sign up link styles
   signupContainer: {
     alignItems: "center",
+    marginTop: 12,
   },
   signupText: {
     fontSize: 16,
