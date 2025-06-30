@@ -56,6 +56,7 @@ export default function ExploreScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { wishlist, toggleWishlist } = useWishlist();
+  const flatListRef = useRef(null);
 
   // Animation refs for end message
   const headerAnim = useRef(new Animated.Value(1)).current;
@@ -487,6 +488,118 @@ export default function ExploreScreen() {
         ) : (
           <Text style={styles.empty}>No listings found.</Text>
         )}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        ref={flatListRef}
+        ListFooterComponent={
+          showFooter && filteredListings.length > 0 ? (
+            <Animated.View
+              style={{
+                opacity: fadeAnim,
+                transform: [
+                  { scale: scaleAnim },
+                  { translateY: bounceAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -10] }) },
+                ],
+                alignItems: 'center',
+                marginTop: 32,
+                marginBottom: 50,
+                marginHorizontal: 20,
+              }}
+            >
+              <View style={{
+                backgroundColor: '#f8f6ff',
+                borderRadius: 24,
+                borderWidth: 1.5,
+                borderColor: '#e0d7fa',
+                padding: 24,
+                width: '100%',
+                alignItems: 'center',
+                shadowColor: '#a21caf',
+                shadowOpacity: 0.08,
+                shadowRadius: 16,
+                shadowOffset: { width: 0, height: 6 },
+                elevation: 4,
+              }}>
+                <View style={{
+                  backgroundColor: COLORS.primary + '15',
+                  borderRadius: 50,
+                  width: 60,
+                  height: 60,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 16,
+                }}>
+                  <Feather name="check-circle" size={28} color={COLORS.primary} />
+                </View>
+                
+                <Text style={{ 
+                  fontSize: 22, 
+                  fontWeight: 'bold', 
+                  color: COLORS.primary, 
+                  marginBottom: 8,
+                  textAlign: 'center',
+                }}>
+                  You've seen all properties!
+                </Text>
+                
+                <Text style={{ 
+                  fontSize: 16, 
+                  color: COLORS.textMuted, 
+                  marginBottom: 24,
+                  textAlign: 'center',
+                  lineHeight: 22,
+                }}>
+                  Check back later for new listings or refresh to see updated content
+                </Text>
+                
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: COLORS.primary,
+                    borderRadius: 20,
+                    paddingVertical: 16,
+                    paddingHorizontal: 32,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    shadowColor: COLORS.primary,
+                    shadowOpacity: 0.2,
+                    shadowRadius: 12,
+                    shadowOffset: { width: 0, height: 6 },
+                    elevation: 5,
+                    minWidth: 200,
+                    justifyContent: 'center',
+                  }}
+                  activeOpacity={0.85}
+                  onPress={async () => {
+                    handleRefreshListings();
+                    if (flatListRef.current) {
+                      flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+                    }
+                  }}
+                >
+                  <Feather name="refresh-cw" size={20} color="#fff" style={{ marginRight: 10 }} />
+                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Refresh & Go to Top</Text>
+                </TouchableOpacity>
+                
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginTop: 16,
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  backgroundColor: '#fff',
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: '#e5e7eb',
+                }}>
+                  <Feather name="info" size={14} color={COLORS.textMuted} style={{ marginRight: 6 }} />
+                  <Text style={{ fontSize: 12, color: COLORS.textMuted }}>
+                    Pull down to refresh anytime
+                  </Text>
+                </View>
+              </View>
+            </Animated.View>
+          ) : null
+        }
       />
       <FilterModal
         visible={filterModalVisible}
