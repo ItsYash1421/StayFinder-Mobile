@@ -39,10 +39,12 @@ export default function MyBookingScreen({ navigation }) {
         setBookings(response.data.listings || []);
       }
     } catch (error) {
-      console.error('Error fetching bookings:', error);
-      // Don't show alert for authentication errors as they're handled by the interceptor
       if (error.response?.status !== 401 && !error.message?.includes('No authentication token')) {
+        console.error('Error fetching bookings:', error);
         Alert.alert('Error', 'Failed to load bookings');
+      } else if (error.response?.status === 401 || error.message?.includes('No authentication token')) {
+        // Only log to console, do not show alert
+        console.error('Error fetching bookings:', error);
       }
     } finally {
       setLoading(false);
@@ -511,9 +513,10 @@ export default function MyBookingScreen({ navigation }) {
             )}
           </View>
 
+          <View style={{ height: 28 }} />
           {/* Cancelled Bookings Section */}
           {cancelledBookings.length > 0 && (
-            <View style={styles.bookingsContainer}>
+            <View style={[styles.bookingsContainer, { marginTop: 28 }]}>
               <View style={styles.bookingsHeader}>
                 <View style={styles.bookingsTitleContainer}>
                   <Feather name="x-circle" size={20} color="#dc2626" />
@@ -717,6 +720,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    marginBottom: 0,
   },
   bookingsHeader: {
     padding: 20,

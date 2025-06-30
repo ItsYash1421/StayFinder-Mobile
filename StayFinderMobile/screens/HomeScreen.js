@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
+  InteractionManager,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { COLORS } from "../constants/theme";

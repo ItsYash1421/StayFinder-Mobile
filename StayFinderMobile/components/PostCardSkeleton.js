@@ -73,7 +73,7 @@ export default function PostCard({
           <Feather
             name={wishlisted ? "heart" : "heart"}
             size={getResponsiveSize(16, 18, 20, 22)}
-            color={wishlisted ? COLORS.primary : "#fff"}
+            color={wishlisted ? "#fff" : "#fff"}
             style={{ opacity: wishlisted ? 1 : 0.7 }}
           />
         </TouchableOpacity>

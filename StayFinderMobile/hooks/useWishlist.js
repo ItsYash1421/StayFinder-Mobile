@@ -38,12 +38,19 @@ const useWishlist = () => {
     }
   };
 
-  // Toggle wishlist item
+  // Toggle wishlist item (optimistic update)
   const toggleWishlist = async (listingId) => {
     if (authLoading || !token) {
       setError('Please login to manage your wishlist');
       return { success: false, message: 'Please login to manage your wishlist' };
     }
+
+    // Optimistically update UI
+    setWishlist((prev) =>
+      prev.includes(listingId)
+        ? prev.filter((id) => id !== listingId)
+        : [...prev, listingId]
+    );
 
     try {
       const response = await api.post(
@@ -52,14 +59,26 @@ const useWishlist = () => {
       );
 
       if (response.data.success) {
-        // Refresh wishlist from backend instead of updating local state
-        await getWishlist();
+        // Optionally sync with backend
+        // await getWishlist();
         return { success: true, message: response.data.message };
       } else {
+        // Revert UI if failed
+        setWishlist((prev) =>
+          prev.includes(listingId)
+            ? prev.filter((id) => id !== listingId)
+            : [...prev, listingId]
+        );
         setError(response.data.message || 'Failed to toggle wishlist');
         return { success: false, message: response.data.message || 'Failed to toggle wishlist' };
       }
     } catch (err) {
+      // Revert UI if error
+      setWishlist((prev) =>
+        prev.includes(listingId)
+          ? prev.filter((id) => id !== listingId)
+          : [...prev, listingId]
+      );
       setError('Error toggling wishlist');
       console.error('Wishlist toggle error:', err);
       return { success: false, message: 'Error toggling wishlist' };

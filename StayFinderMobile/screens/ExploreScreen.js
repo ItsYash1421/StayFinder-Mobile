@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
@@ -90,17 +90,6 @@ export default function ExploreScreen() {
       }
     }
   }, [route.params]);
-
-  // Guarded sync: Only update route.params if filters and route.params differ (normalized)
-  useEffect(() => {
-    if (navigation.setParams) {
-      const paramsNorm = normalizeFilters(route.params || {});
-      const filtersNorm = normalizeFilters(filters);
-      if (JSON.stringify(paramsNorm) !== JSON.stringify(filtersNorm)) {
-        navigation.setParams(filtersNorm);
-      }
-    }
-  }, [filters]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -228,59 +217,26 @@ export default function ExploreScreen() {
     filterChips.push({ key: "sortBy", label: `Sort: ${filters.sortBy}` });
 
   const removeFilter = (key) => {
-    const newFilters = normalizeFilters(filters);
-    if (key === "price") {
-      newFilters.minPrice = "";
-      newFilters.maxPrice = "";
-    } else if (key === "amenities") {
-      newFilters.amenities = [];
-    } else if (key === "category") {
-      newFilters.category = "all";
-    } else if (key === "sortBy") {
-      newFilters.sortBy = "relevance";
-    } else {
-      newFilters[key] = "";
-    }
-    // Remove from navigation params as well
-    if (navigation.setParams) {
-      const newParams = normalizeFilters(route.params || {});
+    setFilters(prev => {
+      const newFilters = { ...prev };
       if (key === "price") {
-        newParams.minPrice = "";
-        newParams.maxPrice = "";
+        newFilters.minPrice = "";
+        newFilters.maxPrice = "";
       } else if (key === "amenities") {
-        newParams.amenities = [];
+        newFilters.amenities = [];
       } else if (key === "category") {
-        newParams.category = "all";
+        newFilters.category = "all";
       } else if (key === "sortBy") {
-        newParams.sortBy = "relevance";
+        newFilters.sortBy = "relevance";
       } else {
-        newParams[key] = "";
+        newFilters[key] = "";
       }
-      navigation.setParams(newParams);
-    }
-    // If all filters are now empty/default, reset to default values (like clearAllFilters)
-    const isAllCleared = Object.entries(newFilters).every(
-      ([k, v]) =>
-        v === "" ||
-        v === "all" ||
-        v === "relevance" ||
-        (Array.isArray(v) && v.length === 0)
-    );
-    if (isAllCleared) {
-      setFilters(defaultFilters);
-      if (navigation.setParams) {
-        navigation.setParams(defaultFilters);
-      }
-    } else {
-      setFilters(newFilters);
-    }
+      return newFilters;
+    });
   };
 
   const clearAllFilters = () => {
     setFilters(defaultFilters);
-    if (navigation.setParams) {
-      navigation.setParams(defaultFilters);
-    }
   };
 
   // Demo: local wishlist state (replace with global/persisted in real app)
@@ -401,249 +357,137 @@ export default function ExploreScreen() {
     }
   };
 
-  // Responsive grid: adapts to screen size
-  const renderGrid = () => {
-    if (gridColumns > 1) {
-      const rows = [];
-      for (let i = 0; i < filteredListings.length; i += gridColumns) {
-        const rowItems = [];
-        for (let j = 0; j < gridColumns; j++) {
-          if (i + j < filteredListings.length) {
-            const listing = filteredListings[i + j];
-            rowItems.push(
-              <PostCard
-                {...listing}
-                key={listing._id}
-                title={listing.title}
-                location={listing.location}
-                price={`$${listing.price}/night`}
-                image={listing.images?.[0]}
-                rating={listing.rating}
-                guests={listing.guests}
-                bedrooms={listing.bedrooms}
-                bathrooms={listing.bathrooms}
-                amenities={listing.amenities}
-                wishlisted={wishlist.includes(listing._id)}
-                onToggleWishlist={() => handleToggleWishlist(listing._id)}
-                onPress={() =>
-                  navigation.navigate("ListingDetail", {
-                    id: listing._id,
-                  })
-                }
-                style={[styles.card, { flex: 1, marginHorizontal: getResponsiveSize(2, 3, 4, 6) }]}
-              />
-            );
-          }
-        }
-        rows.push(
-          <View key={i} style={styles.gridRow}>
-            {rowItems}
-          </View>
-        );
+  // FlatList renderItem
+  const renderGridItem = useCallback(({ item }) => (
+    <PostCard
+      {...item}
+      image={item.images?.[0] || 'https://via.placeholder.com/300x200?text=No+Image'}
+      wishlisted={wishlist.includes(item._id)}
+      onToggleWishlist={() => handleToggleWishlist(item._id)}
+      onPress={() =>
+        navigation.navigate("ListingDetail", {
+          id: item._id,
+        })
       }
-      return rows;
-    } else {
-      // Single column layout for mobile
-      return filteredListings.map((listing) => (
-        <PostCard
-          {...listing}
-          key={listing._id}
-          title={listing.title}
-          location={listing.location}
-          price={`$${listing.price}/night`}
-          image={listing.images?.[0]}
-          rating={listing.rating}
-          guests={listing.guests}
-          bedrooms={listing.bedrooms}
-          bathrooms={listing.bathrooms}
-          amenities={listing.amenities}
-          wishlisted={wishlist.includes(listing._id)}
-          onToggleWishlist={() => handleToggleWishlist(listing._id)}
-          onPress={() =>
-            navigation.navigate("ListingDetail", {
-              id: listing._id,
-            })
-          }
-          style={styles.card}
+      style={[styles.card, { width: '95%', alignSelf: 'center', marginHorizontal: 0 }]}
+    />
+  ), [wishlist, handleToggleWishlist, gridColumns, navigation]);
+
+  // Memoize the ListHeaderComponent to prevent remounts and input blur
+  const renderListHeader = useMemo(() => (
+    <View style={styles.headerCard}>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>Explore Stays</Text>
+        <TouchableOpacity style={styles.filterBtn} onPress={() => setFilterModalVisible(true)}>
+          <Feather name="sliders" size={20} color="#fff" />
+          <Text style={styles.filterBtnText}>Filters</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.searchBarRow}>
+        <Feather name="map-pin" size={18} color={COLORS.primary} style={{ marginRight: 6 }} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Where to? (Location)"
+          placeholderTextColor={COLORS.textMuted}
+          value={filters.location}
+          onChangeText={text => setFilters(f => ({ ...f, location: text }))}
+          onBlur={() => setFilters(f => ({ ...f, location: f.location.trim() }))}
+          returnKeyType="search"
         />
-      ));
-    }
-  };
+        {!!filters.location && (
+          <TouchableOpacity
+            style={styles.clearBtn}
+            onPress={() => setFilters(f => ({ ...f, location: '' }))}
+          >
+            <Feather name="x-circle" size={16} color={COLORS.textMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
+      <View style={styles.searchBarRow}>
+        <Feather name="calendar" size={18} color={COLORS.primary} style={{ marginRight: 6 }} />
+        <TouchableOpacity
+          style={[styles.searchInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 6 }]}
+          onPress={() => setShowDatePicker(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={{ color: filters.date ? COLORS.text : COLORS.textMuted, fontSize: 15 }}>
+            {formatDateDisplay(filters.date)}
+          </Text>
+          {filters.date ? (
+            <TouchableOpacity
+              onPress={() => setFilters(f => ({ ...f, date: '' }))}
+              style={{ marginLeft: 6 }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Feather name="x-circle" size={16} color={COLORS.textMuted} />
+            </TouchableOpacity>
+          ) : null}
+        </TouchableOpacity>
+      </View>
+      {/* Active Filters Section */}
+      {filterChips.length > 0 && (
+        <View style={styles.activeFiltersCard}>
+          <View style={styles.activeFiltersHeader}>
+            <Text style={styles.activeFiltersTitle}>Active Filters</Text>
+            <TouchableOpacity
+              style={styles.clearAllButton}
+              onPress={clearAllFilters}
+              activeOpacity={0.8}
+            >
+              <Feather name="refresh-cw" size={16} color="#fff" />
+              <Text style={styles.clearAllButtonText}>Clear All</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.filterChipsRow}>
+            {filterChips.map((chip) => (
+              <TouchableOpacity
+                key={chip.key}
+                style={[styles.filterChip, chipColorStyle(chip.key)]}
+                onPress={() => removeFilter(chip.key)}
+              >
+                <Text style={[styles.filterChipText, chipTextColorStyle(chip.key)]}>
+                  {chip.label}
+                </Text>
+                <Feather
+                  name="x"
+                  size={14}
+                  color={chipTextColor(chip.key)}
+                  style={{ marginLeft: 6 }}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
+      {/* Stays found count */}
+      <View style={styles.staysCount}>
+        <Feather name="check-circle" size={20} color={COLORS.primary} style={{ marginRight: 6 }} />
+        <Text style={styles.staysCountText}>{filteredListings.length} stays found</Text>
+      </View>
+    </View>
+  ), [filters, filterChips, filteredListings.length, setFilterModalVisible, setShowDatePicker, clearAllFilters, removeFilter]);
 
   return (
     <View style={styles.container}>
       <AppHeader />
-      <ScrollView
-        style={{ flex: 1, width: '100%' }}
-        contentContainerStyle={[styles.grid, { paddingTop: showHeader ? 0 : 0 }]}
+      <FlatList
+        data={filteredListings}
+        renderItem={renderGridItem}
+        keyExtractor={item => item._id}
+        numColumns={gridColumns}
+        ListHeaderComponent={renderListHeader}
+        contentContainerStyle={{ width: '100%', alignSelf: 'center', paddingBottom: 32 }}
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={4}
+        maxToRenderPerBatch={6}
+        windowSize={7}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        showsVerticalScrollIndicator={true}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-      >
-        <View style={styles.exploreCard}>
-          <View style={styles.headerRow}>
-            <Text style={styles.title}>Explore Stays</Text>
-            <TouchableOpacity
-              style={styles.filterBtn}
-              onPress={() => setFilterModalVisible(true)}
-            >
-              <Feather name="sliders" size={20} color={COLORS.primary} />
-              <Text style={styles.filterBtnText}>
-                Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-              </Text>
-            </TouchableOpacity>
-          </View>
-          {/* Direct Search Bar */}
-          <View style={styles.searchBarCard}>
-            <View style={styles.searchBarRow}>
-              <Feather name="map-pin" size={18} color={COLORS.primary} style={{ marginRight: 6 }} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Where to? (Location)"
-                placeholderTextColor={COLORS.textMuted}
-                value={filters.location}
-                onChangeText={text => setFilters(f => ({ ...f, location: text }))}
-                returnKeyType="search"
-                onSubmitEditing={() => setFilters(f => ({ ...f, location: f.location.trim() }))}
-              />
-              {!!filters.location && (
-                <TouchableOpacity
-                  style={styles.clearBtn}
-                  onPress={() => setFilters(f => ({ ...f, location: '' }))}
-                >
-                  <Feather name="x-circle" size={16} color={COLORS.textMuted} />
-                </TouchableOpacity>
-              )}
-            </View>
-            <View style={styles.searchBarRow}>
-              <Feather name="calendar" size={18} color={COLORS.primary} style={{ marginRight: 6 }} />
-              <TouchableOpacity
-                style={[styles.searchInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 6 }]}
-                onPress={() => setShowDatePicker(true)}
-                activeOpacity={0.8}
-              >
-                <Text style={{ color: filters.date ? COLORS.text : COLORS.textMuted, fontSize: 15 }}>
-                  {formatDateDisplay(filters.date)}
-                </Text>
-                {filters.date ? (
-                  <TouchableOpacity
-                    onPress={() => setFilters(f => ({ ...f, date: '' }))}
-                    style={{ marginLeft: 6 }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Feather name="x-circle" size={16} color={COLORS.textMuted} />
-                  </TouchableOpacity>
-                ) : null}
-              </TouchableOpacity>
-            </View>
-          </View>
-          {/* Active Filters Section */}
-          {filterChips.length > 0 && (
-            <View style={styles.activeFiltersCard}>
-              <View style={styles.activeFiltersHeader}>
-                <Text style={styles.activeFiltersTitle}>Active Filters</Text>
-                <TouchableOpacity
-                  style={styles.clearAllButton}
-                  onPress={clearAllFilters}
-                  activeOpacity={0.8}
-                >
-                  <Feather name="refresh-cw" size={16} color="#fff" />
-                  <Text style={styles.clearAllButtonText}>Clear All</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.filterChipsRow}>
-                {filterChips.map((chip) => (
-                  <TouchableOpacity
-                    key={chip.key}
-                    style={[styles.filterChip, chipColorStyle(chip.key)]}
-                    onPress={() => removeFilter(chip.key)}
-                  >
-                    <Text style={[styles.filterChipText, chipTextColorStyle(chip.key)]}>
-                      {chip.label}
-                    </Text>
-                    <Feather
-                      name="x"
-                      size={14}
-                      color={chipTextColor(chip.key)}
-                      style={{ marginLeft: 6 }}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          )}
-          {/* Stays found count */}
-          <View style={styles.staysCount}>
-            <Feather name="check-circle" size={20} color={COLORS.primary} style={{ marginRight: 6 }} />
-            <Text style={styles.staysCountText}>{filteredListings.length} stays found</Text>
-          </View>
-        </View>
-        {loading ? (
+        ListEmptyComponent={loading ? (
           <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 32 }} />
-        ) : error ? (
-          <Text style={styles.error}>{error}</Text>
-        ) : filteredListings.length === 0 ? (
-          <Text style={styles.empty}>No listings found.</Text>
         ) : (
-          renderGrid()
+          <Text style={styles.empty}>No listings found.</Text>
         )}
-        {/* Simple end message */}
-        {!loading && showFooter && (
-          <Animated.View
-            style={[
-              styles.endMessage,
-              {
-                opacity: fadeAnim,
-                transform: [
-                  { scale: scaleAnim },
-                  {
-                    translateY: bounceAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0, -5],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <View style={styles.endMessageContent}>
-              <View style={styles.endMessageIcon}>
-                <Feather
-                  name="check-circle"
-                  size={32}
-                  color={COLORS.primary}
-                />
-              </View>
-              <Text style={styles.endMessageText}>
-                You've seen all properties! 🏠
-              </Text>
-              <Text style={styles.endMessageSubtext}>
-                Check back later for new listings
-              </Text>
-              <TouchableOpacity
-                style={styles.refreshButton}
-                onPress={handleRefreshListings}
-                activeOpacity={0.8}
-              >
-                <Feather name="refresh-cw" size={18} color="#fff" />
-                <Text style={styles.refreshButtonText}>Refresh</Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        )}
-        <Text style={{
-          fontSize: 12,
-          color: '#9ca3af',
-          textAlign: 'center',
-          letterSpacing: 0.2,
-          fontWeight: '400',
-          marginTop: 16,
-          marginBottom: 8
-        }}>
-          © 2024 StayFinder. All rights reserved.
-        </Text>
-      </ScrollView>
+      />
       <FilterModal
         visible={filterModalVisible}
         onClose={() => setFilterModalVisible(false)}
@@ -668,254 +512,123 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingTop: getResponsiveSize(20, 22, 24, 28),
+    paddingTop: getResponsiveSize(60, 50, 64, 68),
     paddingHorizontal: 0,
-    alignItems: "center",
+   
+  },
+  headerCard: {
+    padding: 20,
+    backgroundColor: "#fcfcfd",
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: "#f3e8ff",
+    width: '100%',
+    alignSelf: "center",
+    marginTop: 48,
+    marginBottom: 12,
+    shadowColor: "#a21caf",
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    width: getResponsiveSize(88, 90, 92, 94) + "%",
-    marginBottom: getResponsiveSize(2, 4, 6, 8),
+    marginBottom: 12,
   },
-  title: {
-    color: COLORS.primary,
-    fontSize: FONT_SIZES['4xl'],
-    fontWeight: "bold",
-    textAlign: "left",
-  },
-  filterBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.backgroundSecondary,
-    borderRadius: getResponsiveSize(6, 8, 10, 12),
-    paddingVertical: getResponsiveSize(6, 8, 10, 12),
-    paddingHorizontal: getResponsiveSize(12, 14, 16, 18),
-    marginLeft: getResponsiveSize(60, 70, 80, 90),
-  },
-  filterBtnText: {
-    color: COLORS.primary,
-    fontWeight: "bold",
-    marginLeft: getResponsiveSize(4, 6, 8, 10),
-    fontSize: FONT_SIZES.base,
-  },
-  subtitle: {
-    color: COLORS.text,
-    fontSize: FONT_SIZES.base,
-    marginBottom: getResponsiveSize(12, 14, 16, 18),
-    textAlign: "center",
-  },
-  grid: {
-    alignItems: "center",
-    paddingBottom: getResponsiveSize(30, 35, 40, 45),
-    paddingTop: getResponsiveSize(6, 8, 10, 12),
-    width: "100%",
-  },
-  gridRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: getResponsiveSize(88, 90, 92, 94) + "%",
-    marginBottom: getResponsiveSize(14, 16, 18, 20),
-  },
-  card: {
-    marginBottom: getResponsiveSize(14, 16, 18, 20),
-    flex: 1,
-    marginHorizontal: getResponsiveSize(2, 3, 4, 6),
-  },
-  error: {
-    color: COLORS.error,
-    textAlign: "center",
-    marginTop: getResponsiveSize(28, 32, 36, 40),
-    fontSize: FONT_SIZES.lg,
-  },
-  empty: {
-    color: COLORS.textMuted,
-    textAlign: "center",
-    marginTop: getResponsiveSize(28, 32, 36, 40),
-    fontSize: FONT_SIZES.lg,
-  },
+  title: { color: COLORS.primary, fontSize: FONT_SIZES['4xl'], fontWeight: "bold" },
+  filterBtn: { flexDirection: "row", alignItems: "center", backgroundColor: COLORS.primary, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
+  filterBtnText: { color: "#fff", fontWeight: "bold", marginLeft: 8, fontSize: FONT_SIZES.base },
+  searchBarRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  searchInput: { flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: "#ececec", borderRadius: 10, backgroundColor: "#fff", fontSize: 15 },
+  empty: { color: COLORS.textMuted, textAlign: "center", marginTop: 32, fontSize: FONT_SIZES.lg },
+  listContent: { paddingBottom: 32 },
+  card: { marginBottom: 16 },
+  clearBtn: { padding: 5 },
   activeFiltersCard: {
-    maxWidth: getResponsiveSize(350, 380, 400, 450),
-    minWidth: getResponsiveSize(350, 380, 400, 450),
+    backgroundColor: '#f8f6ff',
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: '#e0d7fa',
+    padding: 18,
+    marginTop: 18,
+    marginBottom: 14,
+    shadowColor: '#a21caf',
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    width: '90%',
     alignSelf: 'center',
-    backgroundColor: "#fff",
-    borderRadius: getResponsiveSize(14, 16, 18, 20),
-    padding: getResponsiveSize(14, 16, 18, 20),
-    marginTop: getResponsiveSize(14, 16, 18, 20),
-    marginBottom: getResponsiveSize(6, 8, 10, 12),
-    ...getShadow('sm'),
   },
   activeFiltersHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: getResponsiveSize(8, 10, 12, 14),
+    marginBottom: 14,
   },
   activeFiltersTitle: {
-    fontSize: FONT_SIZES.lg,
+    color: COLORS.primary,
+    fontSize: FONT_SIZES['xl'],
     fontWeight: 'bold',
-    color: '#111',
-    flex: 1,
   },
   clearAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.primary,
     borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-    marginLeft: 8,
-    flexShrink: 0,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
   },
   clearAllButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    marginLeft: 6,
-    fontSize: 14,
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 8,
+    fontSize: FONT_SIZES.base,
   },
   filterChipsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 10,
+    marginTop: 2,
   },
   filterChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fce7f3",
-    borderRadius: 999,
-    paddingVertical: 7,
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ede9fe',
+    borderRadius: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: '#c4b5fd',
     marginRight: 8,
     marginBottom: 8,
   },
   filterChipText: {
-    color: "#be185d",
-    fontWeight: "bold",
-    fontSize: 15,
-  },
-  endMessage: {
-    paddingVertical: 32,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    marginTop: 20,
-    backgroundColor: "#f8fafc",
-    borderRadius: 16,
-    marginHorizontal: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  endMessageContent: {
-    alignItems: "center",
-  },
-  endMessageIcon: {
-    marginBottom: 16,
-    backgroundColor: COLORS.primary + "15",
-    borderRadius: 30,
-    padding: 12,
-  },
-  endMessageText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: COLORS.text,
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  endMessageSubtext: {
-    color: COLORS.textMuted,
-    fontSize: 15,
-    textAlign: "center",
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  refreshButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.primary,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  refreshButtonText: {
-    color: "#fff",
-    fontWeight: "600",
-    marginLeft: 8,
-    fontSize: 16,
-  },
-  exploreCard: {
-    padding: 20,
-    backgroundColor: '#fcfcfd',
-    borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: '#f3e8ff',
-    maxWidth: 420,
-    alignSelf: 'center',
-    marginTop: 80,
-    marginBottom: 12,
-    shadowColor: '#a21caf',
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  searchBarCard: {
-    backgroundColor: 'transparent',
-    borderRadius: 16,
-    padding: 0,
-    marginTop: 8,
-    marginBottom: 0,
-    shadowColor: 'transparent',
-    elevation: 0,
-  },
-  searchBarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: '#ececec',
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    fontSize: 15,
-    marginBottom: 0,
-  },
-  clearBtn: {
-    padding: 5,
+    color: COLORS.primary,
+    fontWeight: 'bold',
+    fontSize: FONT_SIZES.sm,
   },
   staysCount: {
     alignSelf: 'center',
     flexDirection: 'row',
-    backgroundColor: '#f3e8ff',
-    borderRadius: 999,
-    paddingVertical: 6,
-    paddingHorizontal: 18,
-    marginTop: 18,
-    marginBottom: 2,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 4,
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
   },
   staysCountText: {
-    color: COLORS.primary,
-    fontWeight: 'bold',
-    fontSize: 15,
-    letterSpacing: 0.2,
+    color: COLORS.text,
+    fontWeight: '600',
+    fontSize: FONT_SIZES.base,
   },
 });
 

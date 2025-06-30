@@ -852,7 +852,7 @@ function MainTabs({ navigation }) {
       initialRouteName="Home"
     >
       <Tab.Screen name="Home" component={HomeStack} />
-      <Tab.Screen name="Explore" component={ExploreStack} />
+      <Tab.Screen name="Explore" component={ExploreStack} options={{ unmountOnBlur: true }} />
       {isHost && <Tab.Screen name="Host" component={HostStack} />}
       <Tab.Screen name="Bookings" component={BookingsStack} />
       <Tab.Screen
