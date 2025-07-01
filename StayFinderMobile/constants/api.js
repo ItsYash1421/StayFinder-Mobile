@@ -1,10 +1,10 @@
 // const BASE_URL = 'http://localhost:5000'; // Local development
-const BASE_URL = 'http://localhost:3000'; // Local development
+//const BASE_URL = 'http://localhost:3000'; // Local development
 // const BASE_URL = 'http://192.168.1.2:5000'; // Example LAN IP
-// const BASE_URL = 'https://stayfinder-mobile.onrender.com'; // Production backend
+const BASE_URL = "https://stayfinder-mobile.onrender.com"; // Production backend
 
 import axios from "axios";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -24,13 +24,13 @@ export const setLogoutHandler = (handler) => {
 api.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (token && token.trim() !== '') {
+      const token = await AsyncStorage.getItem("token");
+      if (token && token.trim() !== "") {
         config.headers.Authorization = `Bearer ${token}`;
       }
       // Always allow the request to proceed - let the backend handle authentication
     } catch (error) {
-      console.log('Error getting token from storage:', error);
+      console.log("Error getting token from storage:", error);
     }
     return config;
   },
@@ -46,14 +46,13 @@ api.interceptors.response.use(
     if (
       error.response &&
       error.response.status === 401 &&
-      (error.response.data?.message?.toLowerCase().includes('jwt expired') ||
-       error.response.data?.message?.toLowerCase().includes('jwt malformed') ||
-       error.response.data?.message?.toLowerCase().includes('invalid token'))
+      (error.response.data?.message?.toLowerCase().includes("jwt expired") ||
+        error.response.data?.message?.toLowerCase().includes("jwt malformed") ||
+        error.response.data?.message?.toLowerCase().includes("invalid token"))
     ) {
-      console.log('JWT error detected, logging out user');
+      console.log("JWT error detected, logging out user");
       if (logoutHandler) logoutHandler();
     }
     return Promise.reject(error);
   }
 );
- 
