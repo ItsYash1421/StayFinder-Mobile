@@ -200,7 +200,7 @@ export default function HeroSection({ onSearch }) {
             </Text>
             <Feather name="users" size={18} color={COLORS.primary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.searchBtn} onPress={() => onSearch && onSearch({ search: location, date, guests })}>
+          <TouchableOpacity style={styles.searchBtn} onPress={() => onSearch && onSearch({ search: location.trim(), date, guests })}>
             <Text style={styles.searchBtnText}>Search</Text>
           </TouchableOpacity>
         </View>

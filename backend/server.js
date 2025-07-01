@@ -10,6 +10,7 @@ import authRoutes from "./routes/userRoutes.js";
 import listingRoutes from "./routes/listingRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import authGoogleRoutes from "./routes/authRoutes.js";
+import notificationRoutes from "./routes/notifications.js";
 import { app, server } from "./socket/socket.js";
 
 const PORT = process.env.PORT || 3000;
@@ -42,11 +43,18 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Global debug log for all incoming requests
+app.use((req, res, next) => {
+  console.log('Incoming request:', req.method, req.url);
+  next();
+});
+
 // Routes
 app.use("/api/user", authRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use('/api/auth', authGoogleRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 server.listen(PORT, () => {
   connectDB();

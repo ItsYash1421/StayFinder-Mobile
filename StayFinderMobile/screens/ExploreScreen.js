@@ -88,7 +88,7 @@ export default function ExploreScreen() {
       const filtersNorm = normalizeFilters(filters);
       if (JSON.stringify(paramsNorm) !== JSON.stringify(filtersNorm)) {
         setFilters(paramsNorm);
-      }
+    }
     }
   }, [route.params]);
 
@@ -101,6 +101,10 @@ export default function ExploreScreen() {
   // Filtering logic
   const filteredListings = React.useMemo(() => {
     let filtered = [...listings];
+    
+    // First, filter out paused listings (frontend safety check)
+    filtered = filtered.filter(listing => listing.status !== 'paused');
+    
     // Only use filters state for filtering
     const f = Object.fromEntries(
       Object.entries(filters).filter(
@@ -134,9 +138,7 @@ export default function ExploreScreen() {
     }
     if (f.category && f.category !== "all") {
       filtered = filtered.filter(
-        (l) =>
-          l.title?.toLowerCase().includes(f.category.toLowerCase()) ||
-          l.description?.toLowerCase().includes(f.category.toLowerCase())
+        (l) => l.category && l.category.toLowerCase() === f.category.toLowerCase()
       );
     }
     if (f.minPrice) {
@@ -220,18 +222,18 @@ export default function ExploreScreen() {
   const removeFilter = (key) => {
     setFilters(prev => {
       const newFilters = { ...prev };
-      if (key === "price") {
-        newFilters.minPrice = "";
-        newFilters.maxPrice = "";
-      } else if (key === "amenities") {
-        newFilters.amenities = [];
-      } else if (key === "category") {
-        newFilters.category = "all";
-      } else if (key === "sortBy") {
-        newFilters.sortBy = "relevance";
-      } else {
-        newFilters[key] = "";
-      }
+    if (key === "price") {
+      newFilters.minPrice = "";
+      newFilters.maxPrice = "";
+    } else if (key === "amenities") {
+      newFilters.amenities = [];
+    } else if (key === "category") {
+      newFilters.category = "all";
+    } else if (key === "sortBy") {
+      newFilters.sortBy = "relevance";
+    } else {
+      newFilters[key] = "";
+    }
       return newFilters;
     });
   };
@@ -360,16 +362,16 @@ export default function ExploreScreen() {
 
   // FlatList renderItem
   const renderGridItem = useCallback(({ item }) => (
-    <PostCard
+              <PostCard
       {...item}
       image={item.images?.[0] || 'https://via.placeholder.com/300x200?text=No+Image'}
       wishlisted={wishlist.includes(item._id)}
       onToggleWishlist={() => handleToggleWishlist(item._id)}
-      onPress={() =>
-        navigation.navigate("ListingDetail", {
+                onPress={() =>
+                  navigation.navigate("ListingDetail", {
           id: item._id,
-        })
-      }
+                  })
+                }
       style={[styles.card, { width: '95%', alignSelf: 'center', marginHorizontal: 0 }]}
     />
   ), [wishlist, handleToggleWishlist, gridColumns, navigation]);
@@ -377,95 +379,95 @@ export default function ExploreScreen() {
   // Memoize the ListHeaderComponent to prevent remounts and input blur
   const renderListHeader = useMemo(() => (
     <View style={styles.headerCard}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Explore Stays</Text>
+          <View style={styles.headerRow}>
+            <Text style={styles.title}>Explore Stays</Text>
         <TouchableOpacity style={styles.filterBtn} onPress={() => setFilterModalVisible(true)}>
           <Feather name="sliders" size={20} color="#fff" />
           <Text style={styles.filterBtnText}>Filters</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.searchBarRow}>
-        <Feather name="map-pin" size={18} color={COLORS.primary} style={{ marginRight: 6 }} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Where to? (Location)"
-          placeholderTextColor={COLORS.textMuted}
-          value={filters.location}
-          onChangeText={text => setFilters(f => ({ ...f, location: text }))}
-          onBlur={() => setFilters(f => ({ ...f, location: f.location.trim() }))}
-          returnKeyType="search"
-        />
-        {!!filters.location && (
-          <TouchableOpacity
-            style={styles.clearBtn}
-            onPress={() => setFilters(f => ({ ...f, location: '' }))}
-          >
-            <Feather name="x-circle" size={16} color={COLORS.textMuted} />
-          </TouchableOpacity>
-        )}
-      </View>
-      <View style={styles.searchBarRow}>
-        <Feather name="calendar" size={18} color={COLORS.primary} style={{ marginRight: 6 }} />
-        <TouchableOpacity
-          style={[styles.searchInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 6 }]}
-          onPress={() => setShowDatePicker(true)}
-          activeOpacity={0.8}
-        >
-          <Text style={{ color: filters.date ? COLORS.text : COLORS.textMuted, fontSize: 15 }}>
-            {formatDateDisplay(filters.date)}
-          </Text>
-          {filters.date ? (
-            <TouchableOpacity
-              onPress={() => setFilters(f => ({ ...f, date: '' }))}
-              style={{ marginLeft: 6 }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Feather name="x-circle" size={16} color={COLORS.textMuted} />
-            </TouchableOpacity>
-          ) : null}
-        </TouchableOpacity>
-      </View>
-      {/* Active Filters Section */}
-      {filterChips.length > 0 && (
-        <View style={styles.activeFiltersCard}>
-          <View style={styles.activeFiltersHeader}>
-            <Text style={styles.activeFiltersTitle}>Active Filters</Text>
-            <TouchableOpacity
-              style={styles.clearAllButton}
-              onPress={clearAllFilters}
-              activeOpacity={0.8}
-            >
-              <Feather name="refresh-cw" size={16} color="#fff" />
-              <Text style={styles.clearAllButtonText}>Clear All</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.filterChipsRow}>
-            {filterChips.map((chip) => (
+            <View style={styles.searchBarRow}>
+              <Feather name="map-pin" size={18} color={COLORS.primary} style={{ marginRight: 6 }} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Where to? (Location)"
+                placeholderTextColor={COLORS.textMuted}
+                value={filters.location}
+                onChangeText={text => setFilters(f => ({ ...f, location: text }))}
+          onBlur={() => setFilters(f => ({ ...f, location: f.location.trim() }))}
+                returnKeyType="search"
+              />
+              {!!filters.location && (
+                <TouchableOpacity
+                  style={styles.clearBtn}
+                  onPress={() => setFilters(f => ({ ...f, location: '' }))}
+                >
+                  <Feather name="x-circle" size={16} color={COLORS.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+            <View style={styles.searchBarRow}>
+              <Feather name="calendar" size={18} color={COLORS.primary} style={{ marginRight: 6 }} />
               <TouchableOpacity
-                key={chip.key}
-                style={[styles.filterChip, chipColorStyle(chip.key)]}
-                onPress={() => removeFilter(chip.key)}
+                style={[styles.searchInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingRight: 6 }]}
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.8}
               >
-                <Text style={[styles.filterChipText, chipTextColorStyle(chip.key)]}>
-                  {chip.label}
+                <Text style={{ color: filters.date ? COLORS.text : COLORS.textMuted, fontSize: 15 }}>
+                  {formatDateDisplay(filters.date)}
                 </Text>
-                <Feather
-                  name="x"
-                  size={14}
-                  color={chipTextColor(chip.key)}
-                  style={{ marginLeft: 6 }}
-                />
+                {filters.date ? (
+                  <TouchableOpacity
+                    onPress={() => setFilters(f => ({ ...f, date: '' }))}
+                    style={{ marginLeft: 6 }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Feather name="x-circle" size={16} color={COLORS.textMuted} />
+                  </TouchableOpacity>
+                ) : null}
               </TouchableOpacity>
-            ))}
+          </View>
+          {/* Active Filters Section */}
+          {filterChips.length > 0 && (
+            <View style={styles.activeFiltersCard}>
+              <View style={styles.activeFiltersHeader}>
+                <Text style={styles.activeFiltersTitle}>Active Filters</Text>
+                <TouchableOpacity
+                  style={styles.clearAllButton}
+                  onPress={clearAllFilters}
+                  activeOpacity={0.8}
+                >
+                  <Feather name="refresh-cw" size={16} color="#fff" />
+                  <Text style={styles.clearAllButtonText}>Clear All</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.filterChipsRow}>
+                {filterChips.map((chip) => (
+                  <TouchableOpacity
+                    key={chip.key}
+                    style={[styles.filterChip, chipColorStyle(chip.key)]}
+                    onPress={() => removeFilter(chip.key)}
+                  >
+                    <Text style={[styles.filterChipText, chipTextColorStyle(chip.key)]}>
+                      {chip.label}
+                    </Text>
+                    <Feather
+                      name="x"
+                      size={14}
+                      color={chipTextColor(chip.key)}
+                      style={{ marginLeft: 6 }}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+          {/* Stays found count */}
+          <View style={styles.staysCount}>
+            <Feather name="check-circle" size={20} color={COLORS.primary} style={{ marginRight: 6 }} />
+            <Text style={styles.staysCountText}>{filteredListings.length} stays found</Text>
           </View>
         </View>
-      )}
-      {/* Stays found count */}
-      <View style={styles.staysCount}>
-        <Feather name="check-circle" size={20} color={COLORS.primary} style={{ marginRight: 6 }} />
-        <Text style={styles.staysCountText}>{filteredListings.length} stays found</Text>
-      </View>
-    </View>
   ), [filters, filterChips, filteredListings.length, setFilterModalVisible, setShowDatePicker, clearAllFilters, removeFilter]);
 
   return (
@@ -493,7 +495,7 @@ export default function ExploreScreen() {
         ref={flatListRef}
         ListFooterComponent={
           showFooter && filteredListings.length > 0 ? (
-            <Animated.View
+          <Animated.View
               style={{
                 opacity: fadeAnim,
                 transform: [
@@ -505,7 +507,7 @@ export default function ExploreScreen() {
                 marginBottom: 50,
                 marginHorizontal: 20,
               }}
-            >
+          >
               <View style={{
                 backgroundColor: '#f8f6ff',
                 borderRadius: 24,
@@ -530,7 +532,7 @@ export default function ExploreScreen() {
                   marginBottom: 16,
                 }}>
                   <Feather name="check-circle" size={28} color={COLORS.primary} />
-                </View>
+              </View>
                 
                 <Text style={{ 
                   fontSize: 22, 
@@ -540,7 +542,7 @@ export default function ExploreScreen() {
                   textAlign: 'center',
                 }}>
                   You've seen all properties!
-                </Text>
+              </Text>
                 
                 <Text style={{ 
                   fontSize: 16, 
@@ -550,9 +552,9 @@ export default function ExploreScreen() {
                   lineHeight: 22,
                 }}>
                   Check back later for new listings or refresh to see updated content
-                </Text>
+              </Text>
                 
-                <TouchableOpacity
+              <TouchableOpacity
                   style={{
                     backgroundColor: COLORS.primary,
                     borderRadius: 20,
@@ -575,15 +577,15 @@ export default function ExploreScreen() {
                       flatListRef.current.scrollToOffset({ offset: 0, animated: true });
                     }
                   }}
-                >
+              >
                   <Feather name="refresh-cw" size={20} color="#fff" style={{ marginRight: 10 }} />
                   <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Refresh & Go to Top</Text>
-                </TouchableOpacity>
+              </TouchableOpacity>
                 
                 <View style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  marginTop: 16,
+          marginTop: 16,
                   paddingHorizontal: 16,
                   paddingVertical: 8,
                   backgroundColor: '#fff',
@@ -594,7 +596,7 @@ export default function ExploreScreen() {
                   <Feather name="info" size={14} color={COLORS.textMuted} style={{ marginRight: 6 }} />
                   <Text style={{ fontSize: 12, color: COLORS.textMuted }}>
                     Pull down to refresh anytime
-                  </Text>
+        </Text>
                 </View>
               </View>
             </Animated.View>
@@ -808,4 +810,5 @@ function chipTextColor(key) {
       return COLORS.primary;
   }
 }
+ 
  

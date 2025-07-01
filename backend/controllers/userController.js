@@ -173,7 +173,26 @@ const addlisting = async (req, res) => {
 
 const myListings = async (req, res) => {
   try {
-    const listings = await Booking.find({ userId: req.user.id });
+    console.log('🔍 Fetching user bookings for userId:', req.user.id);
+    
+    // Find bookings and populate listing data
+    const bookings = await Booking.find({ userId: req.user.id, status: { $ne: 'paused' } })
+      .populate('listingId', 'title location images price category rating')
+      .sort({ createdAt: -1 }); // Show newest first (latest at top)
+    
+    console.log('✅ Found bookings:', bookings.length);
+    console.log('📊 Sample booking:', bookings[0] ? {
+      id: bookings[0]._id,
+      listingId: bookings[0].listingId,
+      status: bookings[0].status
+    } : 'No bookings');
+    
+    // Transform the data to match frontend expectations
+    const listings = bookings.map(booking => ({
+      ...booking.toObject(),
+      listing: booking.listingId // Map listingId to listing for frontend compatibility
+    }));
+    
     return res.status(200).json({ success: true, listings });
   } catch (error) {
     console.error("Error fetching listings:", error);
@@ -380,7 +399,7 @@ const getHostListings = async (req, res) => {
   try {
     const { userId } = req.body;
 
-    const listings = await Listing.find({ hostId: userId });
+    const listings = await Listing.find({ hostId: userId, status: { $ne: 'paused' } });
 
     if (!listings)
       return res.json({ message: "no listing found", success: false });
@@ -395,11 +414,58 @@ const getHostGuestListings = async (req, res) => {
   try {
     // Use req.user.id from auth middleware
     const hostId = req.user.id;
-    // Return all bookings for this host
-    const listings = await Booking.find({ hostId });
+    console.log('🔍 Fetching guest listings for hostId:', hostId);
+    
+    // First, let's check if there are any bookings at all
+    const allBookings = await Booking.find({});
+    console.log('📊 Total bookings in database:', allBookings.length);
+    
+    // Check bookings for this specific host (excluding paused status)
+    const hostBookings = await Booking.find({ hostId, status: { $ne: 'paused' } });
+    console.log('🏠 Bookings for this host (excluding paused):', hostBookings.length);
+    console.log('🏠 Host bookings data:', hostBookings.map(b => ({
+      id: b._id,
+      hostId: b.hostId,
+      listingId: b.listingId,
+      status: b.status,
+      createdAt: b.createdAt
+    })));
+    
+    // Return all bookings for this host with populated data (excluding paused status)
+    const bookings = await Booking.find({ hostId, status: { $ne: 'paused' } })
+      .populate('listingId', 'title location images price category rating')
+      .populate('userId', 'name email profileImage')
+      .sort({ createdAt: -1 }); // Sort by newest first (latest at top)
+    
+    console.log('✅ Populated bookings (excluding paused):', bookings.length);
+    console.log('✅ Sample booking data:', bookings[0] ? {
+      id: bookings[0]._id,
+      listingId: bookings[0].listingId,
+      userId: bookings[0].userId,
+      status: bookings[0].status
+    } : 'No bookings found');
+    
+    // Transform the data to match frontend expectations
+    const listings = bookings.map(booking => ({
+      ...booking.toObject(),
+      listing: booking.listingId, // Map listingId to listing for frontend compatibility
+      userId: booking.userId // Keep user details
+    }));
+    
+    console.log('🎯 Final response data:', {
+      success: true,
+      listingsCount: listings.length,
+      sampleListing: listings[0] ? {
+        id: listings[0]._id,
+        listing: listings[0].listing,
+        userId: listings[0].userId,
+        status: listings[0].status
+      } : 'No listings'
+    });
+    
     res.status(200).json({ success: true, listings });
   } catch (error) {
-    console.error("Error fetching host listings:", error);
+    console.error("❌ Error fetching host listings:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };

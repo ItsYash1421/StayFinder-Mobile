@@ -63,10 +63,11 @@ export default function WishlistScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  // Filter listings that are in wishlist
+  // Filter listings that are in wishlist and not paused
   const wishlistListings = listings.filter(listing => {
     const isInWishlist = wishlist.includes(listing._id) || wishlist.includes(listing._id.toString());
-    return isInWishlist;
+    const isNotPaused = listing.status !== 'paused';
+    return isInWishlist && isNotPaused;
   });
 
   // Debug function to check wishlist data (only log when there's an issue)

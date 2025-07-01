@@ -1,11 +1,12 @@
 import Listing from "../models/listingModel.js";
 import { cloudinary } from "../lib/cloudinary.js";
 import User from "../models/userModel.js"; // adjust the import path if needed
+import Booking from "../models/bookingModel.js";
 
 const getListings = async (req, res) => {
   try {
-    // Fetch listings from the database
-    const listings = await Listing.find();
+    // Fetch listings from the database, excluding paused listings
+    const listings = await Listing.find({ status: { $ne: 'paused' } });
     return res.status(200).json({ listings, success: true });
   } catch (error) {
     console.error(error);
@@ -24,6 +25,10 @@ const getListingById = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Listing not found" });
     } else {
+      // Increment views
+      listing.views = (listing.views || 0) + 1;
+      await listing.save();
+      console.log(`Views incremented for listing ${listing._id}:`, listing.views);
       return res.status(200).json({ listing, success: true });
     }
   } catch (error) {
@@ -60,10 +65,10 @@ const createListing = async (req, res) => {
     const imageFiles = req.files;
     
     if (!imageFiles || imageFiles.length === 0) {
-      return res.status(400).json({ 
+      return { 
         success: false, 
         message: "At least one image is required" 
-      });
+      };
     }
 
     const imageUrls = [];
@@ -87,10 +92,10 @@ const createListing = async (req, res) => {
     
     if (!finalHostId) {
       console.log('ERROR: No hostId found!');
-      return res.status(400).json({ 
+      return { 
         success: false, 
         message: "Host ID is required" 
-      });
+      };
     }
 
     const listingData = {
@@ -115,12 +120,12 @@ const createListing = async (req, res) => {
     const newListing = await Listing.create(listingData);
 
     console.log('Listing created successfully:', newListing._id);
-    return res
-      .status(201)
-      .json({ success: true, message: "Listing Added", listing: newListing });
+    
+    // Return the result instead of sending response
+    return { success: true, message: "Listing Added", listing: newListing };
   } catch (error) {
     console.error("Error creating listing:", error);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return { success: false, message: "Server error" };
   }
 };
 
@@ -233,10 +238,165 @@ const deleteListing = async (req, res) => {
   }
 };
 
+const getPopularListings = async (req, res) => {
+  try {
+    console.log('🔍 Fetching popular listings...');
+    
+    // Get top 10 listings by popularity (views + booking count)
+    const popularListings = await Listing.aggregate([
+      // Match only live listings (exclude paused)
+      { $match: { status: { $ne: 'paused' } } },
+      
+      // Lookup bookings for each listing
+      {
+        $lookup: {
+          from: 'bookings',
+          localField: '_id',
+          foreignField: 'listingId',
+          as: 'bookings'
+        }
+      },
+      
+      // Add fields for popularity calculation
+      {
+        $addFields: {
+          bookingCount: { $size: '$bookings' },
+          // Calculate popularity score: views + (booking count * 10) + (rating * 100)
+          popularityScore: {
+            $add: [
+              { $ifNull: ['$views', 0] },
+              { $multiply: [{ $size: '$bookings' }, 10] },
+              { $multiply: [{ $ifNull: ['$rating', 0] }, 100] }
+            ]
+          }
+        }
+      },
+      
+      // Sort by popularity score (descending)
+      { $sort: { popularityScore: -1 } },
+      
+      // Limit to top 10
+      { $limit: 10 },
+      
+      // Project only the fields we need
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          location: 1,
+          price: 1,
+          images: 1,
+          category: 1,
+          rating: 1,
+          views: 1,
+          bookingCount: 1,
+          popularityScore: 1
+        }
+      }
+    ]);
+
+    console.log('✅ Popular listings found:', popularListings.length);
+    console.log('📊 Sample listing:', popularListings[0] ? {
+      id: popularListings[0]._id,
+      title: popularListings[0].title,
+      category: popularListings[0].category,
+      bookingCount: popularListings[0].bookingCount,
+      views: popularListings[0].views,
+      popularityScore: popularListings[0].popularityScore
+    } : 'No listings found');
+
+    return res.status(200).json({ 
+      success: true, 
+      listings: popularListings 
+    });
+  } catch (error) {
+    console.error("❌ Error fetching popular listings:", error);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server error" 
+    });
+  }
+};
+
+const getTrendingDestinations = async (req, res) => {
+  try {
+    console.log('🌍 Fetching trending destinations by booking count...');
+    
+    // Get top 5 destinations by booking count
+    const trendingDestinations = await Listing.aggregate([
+      // Match only live listings (exclude paused)
+      { $match: { status: { $ne: 'paused' } } },
+      
+      // Lookup bookings for each listing
+      {
+        $lookup: {
+          from: 'bookings',
+          localField: '_id',
+          foreignField: 'listingId',
+          as: 'bookings'
+        }
+      },
+      
+      // Add booking count field
+      {
+        $addFields: {
+          bookingCount: { $size: '$bookings' }
+        }
+      },
+      
+      // Filter out listings with no bookings
+      { $match: { bookingCount: { $gt: 0 } } },
+      
+      // Sort by booking count (descending)
+      { $sort: { bookingCount: -1 } },
+      
+      // Limit to top 5
+      { $limit: 5 },
+      
+      // Project only the fields we need
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          location: 1,
+          price: 1,
+          images: 1,
+          category: 1,
+          rating: 1,
+          views: 1,
+          bookingCount: 1
+        }
+      }
+    ]);
+
+    console.log('✅ Trending destinations found:', trendingDestinations.length);
+    console.log('📊 Sample destination:', trendingDestinations[0] ? {
+      id: trendingDestinations[0]._id,
+      title: trendingDestinations[0].title,
+      location: trendingDestinations[0].location,
+      category: trendingDestinations[0].category,
+      bookingCount: trendingDestinations[0].bookingCount
+    } : 'No destinations found');
+
+    return res.status(200).json({ 
+      success: true, 
+      destinations: trendingDestinations 
+    });
+  } catch (error) {
+    console.error("❌ Error fetching trending destinations:", error);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server error" 
+    });
+  }
+};
+
 export {
   getListings,
   getListingById,
   deleteListing,
   createListing,
   editListing,
+  getPopularListings,
+  getTrendingDestinations,
 };

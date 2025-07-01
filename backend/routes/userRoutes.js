@@ -15,6 +15,7 @@ import {
 } from "../controllers/userController.js";
 import authUser from "../middleware/authUser.js";
 import upload from "../middleware/multer.js";
+import Booking from "../models/bookingModel.js";
 
 const userRoutes = express.Router();
 
@@ -37,4 +38,23 @@ userRoutes.post("/change-password", authUser, changePassword);
 
 userRoutes.get("/host-listings", authUser, getHostListings);
 userRoutes.get("/host-guest-listings", authUser, getHostGuestListings);
+
+// Test endpoint to check all bookings
+userRoutes.get("/test-bookings", authUser, async (req, res) => {
+  try {
+    const allBookings = await Booking.find({ status: { $ne: 'paused' } });
+    const hostBookings = await Booking.find({ hostId: req.user.id, status: { $ne: 'paused' } });
+    
+    res.json({
+      success: true,
+      totalBookings: allBookings.length,
+      hostBookings: hostBookings.length,
+      sampleBooking: allBookings[0] || null,
+      user: req.user
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default userRoutes;

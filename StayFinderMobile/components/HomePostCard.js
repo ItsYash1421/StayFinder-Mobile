@@ -6,7 +6,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
 
-export default function HomePostCard({ title = 'Sample Property', location = 'City, Country', price = '$100/night', image, style, onPress = () => {} }) {
+export default function HomePostCard({ 
+  title = 'Sample Property', 
+  location = 'City, Country', 
+  price = '$100/night', 
+  image, 
+  style, 
+  onPress = () => {},
+  bookingCount,
+  views,
+  rating
+}) {
   return (
     <TouchableOpacity
       activeOpacity={0.88}
@@ -35,6 +45,28 @@ export default function HomePostCard({ title = 'Sample Property', location = 'Ci
           <Text style={styles.location} numberOfLines={1}>{location}</Text>
         </View>
         <Text style={styles.price}>{price}</Text>
+        {(bookingCount !== undefined || views !== undefined || rating) && (
+          <View style={styles.popularityInfo}>
+            {bookingCount !== undefined && (
+              <View style={styles.popularityItem}>
+                <Feather name="calendar" size={12} color={COLORS.textMuted} />
+                <Text style={styles.popularityText}>{bookingCount} bookings</Text>
+              </View>
+            )}
+            {views !== undefined && (
+              <View style={styles.popularityItem}>
+                <Feather name="eye" size={12} color={COLORS.textMuted} />
+                <Text style={styles.popularityText}>{views} views</Text>
+              </View>
+            )}
+            {rating && (
+              <View style={styles.popularityItem}>
+                <Feather name="star" size={12} color="#FFD700" />
+                <Text style={styles.popularityText}>{rating}</Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -94,5 +126,20 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginTop: 8,
     fontWeight: '600',
+  },
+  popularityInfo: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    gap: 8,
+  },
+  popularityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  popularityText: {
+    fontSize: 12,
+    color: COLORS.textMuted,
   },
 }); 

@@ -96,10 +96,18 @@ export default function HomeScreen() {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get("/api/listings");
+      // Fetch popular listings instead of all listings
+      const res = await api.get("/api/listings/popular");
       setListings(res.data.listings || []);
     } catch (err) {
-      setError("Failed to load listings");
+      console.error("Error fetching popular listings:", err);
+      // Fallback to regular listings if popular endpoint fails
+      try {
+        const fallbackRes = await api.get("/api/listings");
+        setListings(fallbackRes.data.listings || []);
+      } catch (fallbackErr) {
+        setError("Failed to load listings");
+      }
     } finally {
       setLoading(false);
     }
@@ -117,14 +125,20 @@ export default function HomeScreen() {
 
   // Search handler
   const handleSearch = (params) => {
+    const trimmedParams = {
+      ...params,
+      search: params.search ? params.search.trim() : '',
+      location: params.location ? params.location.trim() : '',
+    };
     navigation.navigate("Explore", {
       screen: "ExploreMain",
-      params: { ...defaultFilters, ...params },
+      params: { ...defaultFilters, ...trimmedParams },
     });
   };
 
-  // Duplicate first card at the end for seamless looping
-  const carouselData = listings.slice(0, 10);
+  // Filter out paused listings and duplicate first card at the end for seamless looping
+  const activeListings = listings.filter(listing => listing.status !== 'paused');
+  const carouselData = activeListings.slice(0, 10);
   const infiniteData = [...carouselData, carouselData[0]];
   const lastIndex = carouselData.length - 1;
 
@@ -202,8 +216,8 @@ export default function HomeScreen() {
         <Animated.View style={{ opacity: fadeAnim2 }}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.trendingTitle}>
-              Popular{" "}
-              <Text style={{ color: COLORS.primary }}>Destinations</Text>
+              Top{" "}
+              <Text style={{ color: COLORS.primary }}>Popular Listings</Text>
             </Text>
             <TouchableOpacity
               style={styles.exploreMoreBtn}
@@ -247,6 +261,9 @@ export default function HomeScreen() {
                     price={`$${listing.price}/night`}
                     image={listing.images?.[0]}
                     style={styles.card}
+                    bookingCount={listing.bookingCount}
+                    views={listing.views}
+                    rating={listing.rating}
                     onPress={() =>
                       navigation.navigate("ListingDetail", { id: listing._id })
                     }

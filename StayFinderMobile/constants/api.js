@@ -1,6 +1,7 @@
 // const BASE_URL = 'http://localhost:5000'; // Local development
+const BASE_URL = 'http://localhost:3000'; // Local development
 // const BASE_URL = 'http://192.168.1.2:5000'; // Example LAN IP
-const BASE_URL = 'https://stayfinder-mobile.onrender.com'; // Production backend
+// const BASE_URL = 'https://stayfinder-mobile.onrender.com'; // Production backend
 
 import axios from "axios";
 import AsyncStorage from '@react-native-async-storage/async-storage';

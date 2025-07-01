@@ -159,7 +159,7 @@ export default function PostCard({
         </View>
 
         <Text style={styles.priceLabel}>per night</Text>
-        <Text style={styles.price}>{price}</Text>
+        <Text style={styles.price}><Text style={{fontSize: styles.price.fontSize, fontWeight: styles.price.fontWeight, color: styles.price.color}}>$</Text>{price}</Text>
       </View>
     </TouchableOpacity>
   );

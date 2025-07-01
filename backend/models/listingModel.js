@@ -41,6 +41,16 @@ const listingSchema = new mongoose.Schema(
       default: 0,
     },
 
+    status: {
+      type: String,
+      enum: ["live", "draft", "paused"],
+      default: "live",
+    },
+    views: {
+      type: Number,
+      default: 0,
+    },
+
     amenities: {
       wifi: { type: Boolean, default: false },
       kitchen: { type: Boolean, default: false },

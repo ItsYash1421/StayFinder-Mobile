@@ -72,12 +72,13 @@ export default function ListingDetailScreen({ navigation, route }) {
 
     setBookingLoading(true);
     try {
-      const response = await api.post('/api/user/add-listing', {
-        listingId: listing._id,
-        startDate: checkIn,
-        endDate: checkOut,
-        adults: guests,
-        specialRequests: 'Nothing special',
+      const response = await api.post('/api/bookings', {
+        propertyId: listing._id,
+        propertyTitle: listing.title,
+        checkIn,
+        checkOut,
+        amountPaid: listing.price * calculateNights(),
+        guestName: user?.name || 'Guest',
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });

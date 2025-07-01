@@ -152,15 +152,16 @@ export default function MyBookingScreen({ navigation }) {
     );
   }, [token, fadeAnim]);
 
-  // Filter out cancelled and rejected bookings and sort by check-in date (upcoming first)
+  // Filter out cancelled and rejected bookings and sort by creation date (newest first)
   const activeBookings = bookings.filter(
     booking => 
       booking.status !== 'cancelled' && 
       booking.status !== 'rejected' &&
+      booking.status !== 'paused' &&
       !cancellingBookings.has(booking._id)
   ).sort((a, b) => {
-    // Sort by check-in date, upcoming trips first
-    return new Date(a.startDate) - new Date(b.startDate);
+    // Sort by creation date, newest first
+    return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
   // Get cancelled bookings for display, sorted by creation date (newest first)
@@ -188,6 +189,13 @@ export default function MyBookingScreen({ navigation }) {
       });
     }
   }, [cancelledBookings]);
+
+  // Debug: Log all booking statuses
+  useEffect(() => {
+    console.log('All booking statuses:', bookings.map(b => b.status));
+    console.log('Active bookings count:', activeBookings.length);
+    console.log('Cancelled bookings count:', cancelledBookings.length);
+  }, [bookings, activeBookings, cancelledBookings]);
   
   const calculateStats = () => {
     const totalSpent = activeBookings.reduce((sum, booking) => {
