@@ -2,7 +2,7 @@ import generateToken from "../lib/generateToken.js";
 import Booking from "../models/bookingModel.js";
 import Listing from "../models/listingModel.js";
 import User from "../models/userModel.js";
-import { cloudinary } from "../lib/cloudinary.js";
+
 import bcrypt from "bcryptjs";
 import { io, userSocketMap } from "../socket/socket.js";
 import { uploadToBunnyNet } from "../lib/bunny.js";
@@ -195,7 +195,7 @@ const myListings = async (req, res) => {
             listingId: bookings[0].listingId,
             status: bookings[0].status,
           }
-        : "No bookings",
+        : "No bookings"
     );
 
     // Transform the data to match frontend expectations
@@ -362,13 +362,11 @@ const updateProfile = async (req, res) => {
         await User.findByIdAndUpdate(userId, { profileImage: bunnyUrl });
       } catch (uploadErr) {
         console.error("Bunny.net upload error:", uploadErr);
-        return res
-          .status(500)
-          .json({
-            success: false,
-            message: "Image upload failed",
-            error: uploadErr.message,
-          });
+        return res.status(500).json({
+          success: false,
+          message: "Image upload failed",
+          error: uploadErr.message,
+        });
       }
     }
     const updatedUser = await user.save();
@@ -459,7 +457,7 @@ const getHostGuestListings = async (req, res) => {
     });
     console.log(
       "🏠 Bookings for this host (excluding paused):",
-      hostBookings.length,
+      hostBookings.length
     );
     console.log(
       "🏠 Host bookings data:",
@@ -469,7 +467,7 @@ const getHostGuestListings = async (req, res) => {
         listingId: b.listingId,
         status: b.status,
         createdAt: b.createdAt,
-      })),
+      }))
     );
 
     // Return all bookings for this host with populated data (excluding paused status)
@@ -488,7 +486,7 @@ const getHostGuestListings = async (req, res) => {
             userId: bookings[0].userId,
             status: bookings[0].status,
           }
-        : "No bookings found",
+        : "No bookings found"
     );
 
     // Transform the data to match frontend expectations

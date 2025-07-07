@@ -1,5 +1,5 @@
 import Listing from "../models/listingModel.js";
-import { cloudinary } from "../lib/cloudinary.js";
+
 import User from "../models/userModel.js"; // adjust the import path if needed
 import Booking from "../models/bookingModel.js";
 import { uploadToBunnyNet } from "../lib/bunny.js";
@@ -15,21 +15,23 @@ const getListings = async (req, res) => {
           from: "bookings",
           localField: "_id",
           foreignField: "listingId",
-          as: "bookingsArr"
-        }
+          as: "bookingsArr",
+        },
       },
       {
         $addFields: {
-          bookingCount: { $size: "$bookingsArr" }
-        }
+          bookingCount: { $size: "$bookingsArr" },
+        },
       },
       {
         $project: {
-          bookingsArr: 0 // Exclude the bookings array from the result
-        }
-      }
+          bookingsArr: 0, // Exclude the bookings array from the result
+        },
+      },
     ]);
-    return res.status(200).json({ listings: listingsWithCounts, success: true });
+    return res
+      .status(200)
+      .json({ listings: listingsWithCounts, success: true });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ success: false, message: "Server error" });
@@ -40,7 +42,7 @@ const getListingById = async (req, res) => {
   const { id } = req.params;
   try {
     // Fetch a single listing by ID and populate hostId
-    const listing = await Listing.findById(id).populate('hostId');
+    const listing = await Listing.findById(id).populate("hostId");
     console.log(listing);
     if (!listing) {
       return res
@@ -52,7 +54,7 @@ const getListingById = async (req, res) => {
       await listing.save();
       console.log(
         `Views incremented for listing ${listing._id}:`,
-        listing.views,
+        listing.views
       );
       return res.status(200).json({ listing, success: true });
     }
@@ -140,7 +142,7 @@ const createListing = async (req, res) => {
 
     console.log(
       "Listing data to create:",
-      JSON.stringify(listingData, null, 2),
+      JSON.stringify(listingData, null, 2)
     );
 
     const newListing = await Listing.create(listingData);
@@ -250,7 +252,7 @@ const deleteListing = async (req, res) => {
     // 2. Remove listingId from all users' wishlist arrays
     await User.updateMany(
       { wishlist: listingId },
-      { $pull: { wishlist: listingId } },
+      { $pull: { wishlist: listingId } }
     );
 
     res.status(200).json({
@@ -332,7 +334,7 @@ const getPopularListings = async (req, res) => {
             views: popularListings[0].views,
             popularityScore: popularListings[0].popularityScore,
           }
-        : "No listings found",
+        : "No listings found"
     );
 
     return res.status(200).json({
@@ -410,7 +412,7 @@ const getTrendingDestinations = async (req, res) => {
             category: trendingDestinations[0].category,
             bookingCount: trendingDestinations[0].bookingCount,
           }
-        : "No destinations found",
+        : "No destinations found"
     );
 
     return res.status(200).json({
@@ -429,7 +431,9 @@ const getTrendingDestinations = async (req, res) => {
 // Get all unique locations
 const getUniqueLocations = async (req, res) => {
   try {
-    const locations = await Listing.distinct("location", { location: { $exists: true, $ne: null, $ne: "" } });
+    const locations = await Listing.distinct("location", {
+      location: { $exists: true, $ne: null, $ne: "" },
+    });
     return res.status(200).json({ success: true, locations });
   } catch (error) {
     console.error(error);

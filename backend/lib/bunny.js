@@ -1,10 +1,12 @@
 import https from "https";
 import fs from "fs";
 
-const BUNNY_STORAGE_ZONE = "stayfinder";
-const BUNNY_API_KEY = "1a334013-01cf-4f55-85cb5038c396-403e-4338";
-const BUNNY_STORAGE_HOST = "storage.bunnycdn.com";
-export const BUNNY_PULL_ZONE_URL = "https://stayfinder.b-cdn.net";
+
+
+const BUNNY_STORAGE_ZONE = process.env.BUNNY_STORAGE_ZONE;
+const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
+const BUNNY_STORAGE_HOST = process.env.BUNNY_STORAGE_HOST;
+export const BUNNY_PULL_ZONE_URL = process.env.BUNNY_PULL_ZONE_URL;
 
 export async function uploadToBunnyNet(localPath, remotePath) {
   return new Promise((resolve, reject) => {
