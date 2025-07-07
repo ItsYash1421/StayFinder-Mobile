@@ -1,48 +1,50 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
-import { COLORS } from '../constants/theme';
-import { Feather } from '@expo/vector-icons';
+import React, { useRef, useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, Dimensions } from "react-native";
+import { COLORS } from "../constants/theme";
+import { Feather } from "@expo/vector-icons";
 
 const FEATURES = [
   {
     icon: (color, size) => <Feather name="shield" size={size} color={color} />,
-    title: 'Verified Listings',
-    description: 'Every property undergoes rigorous verification so you book with confidence.',
+    title: "Verified Listings",
+    description:
+      "Every property undergoes rigorous verification so you book with confidence.",
   },
   {
     icon: (color, size) => <Feather name="star" size={size} color={color} />,
-    title: 'Unique Stays',
-    description: 'Discover treehouses, boutique villas, and homes with character—no generic hotels.',
+    title: "Unique Stays",
+    description:
+      "Discover treehouses, boutique villas, and homes with character—no generic hotels.",
   },
   {
     icon: (color, size) => <Feather name="heart" size={size} color={color} />,
-    title: 'Personalized Matching',
-    description: 'AI-powered recommendations tailored to your travel style.',
+    title: "Personalized Matching",
+    description: "AI-powered recommendations tailored to your travel style.",
   },
   {
     icon: (color, size) => <Feather name="globe" size={size} color={color} />,
-    title: 'Global Coverage',
-    description: '120+ countries with local experts to guide your stay.',
+    title: "Global Coverage",
+    description: "120+ countries with local experts to guide your stay.",
   },
   {
     icon: (color, size) => <Feather name="tag" size={size} color={color} />,
-    title: 'Transparent Pricing',
-    description: 'No hidden fees—see the total cost upfront.',
+    title: "Transparent Pricing",
+    description: "No hidden fees—see the total cost upfront.",
   },
   {
     icon: (color, size) => <Feather name="key" size={size} color={color} />,
-    title: 'Instant Booking',
-    description: 'Secure your stay instantly with real-time availability.',
+    title: "Instant Booking",
+    description: "Secure your stay instantly with real-time availability.",
   },
 ];
 
 const BADGES = [
-  { label: 'Rated 4.9/5 stars', value: '4.9/5' },
-  { label: '10,000+ verified stays', value: '10,000+' },
-  { label: '24/7 customer support', value: '24/7' },
+  { label: "Rated 4.9/5 stars", value: "4.9/5" },
+  { label: "10,000+ verified stays", value: "10,000+" },
+  { label: "24/7 customer support", value: "24/7" },
 ];
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const CARD_MARGIN = 16;
 const CARD_WIDTH = (SCREEN_WIDTH - CARD_MARGIN * 3) / 2; // 2 cards + 3 margins
 const ICON_SIZE = 26;
@@ -57,10 +59,10 @@ function chunkArray(array, size) {
 
 export default function WhyChooseUs() {
   const slides = chunkArray(FEATURES, 2);
-  
+
   // Create seamless infinite loop by duplicating slides
   const seamlessSlides = [...slides, ...slides, ...slides]; // 3 copies for smooth looping
-  
+
   const scrollRef = useRef(null);
   const currentIndex = useRef(slides.length); // Start at the middle copy
   const autoScrollTimeout = useRef(null);
@@ -70,16 +72,16 @@ export default function WhyChooseUs() {
     if (autoScrollTimeout.current) clearTimeout(autoScrollTimeout.current);
     autoScrollTimeout.current = setTimeout(() => {
       let nextIndex = currentIndex.current + 1;
-      
+
       if (scrollRef.current) {
         scrollRef.current.scrollTo({
           x: nextIndex * SCREEN_WIDTH,
           animated: true,
         });
       }
-      
+
       currentIndex.current = nextIndex;
-      
+
       // Reset to middle section when reaching the end
       if (nextIndex >= slides.length * 2) {
         setTimeout(() => {
@@ -92,7 +94,7 @@ export default function WhyChooseUs() {
           currentIndex.current = slides.length;
         }, 300);
       }
-      
+
       autoScroll(); // Recursive call
     }, 4000);
   };
@@ -100,7 +102,7 @@ export default function WhyChooseUs() {
   // Simple auto-scroll logic
   useEffect(() => {
     let isUnmounted = false;
-    
+
     // Start at the middle section for seamless loop
     setTimeout(() => {
       if (scrollRef.current) {
@@ -110,10 +112,10 @@ export default function WhyChooseUs() {
         });
       }
     }, 100);
-    
+
     // Start auto-scroll
     autoScroll();
-    
+
     return () => {
       isUnmounted = true;
       if (autoScrollTimeout.current) clearTimeout(autoScrollTimeout.current);
@@ -129,21 +131,21 @@ export default function WhyChooseUs() {
     const x = event.nativeEvent.contentOffset.x;
     const slideIndex = Math.round(x / SCREEN_WIDTH);
     currentIndex.current = slideIndex;
-    
+
     // Resume auto-scroll after 5 seconds
     if (autoScrollTimeout.current) clearTimeout(autoScrollTimeout.current);
     autoScrollTimeout.current = setTimeout(() => {
       let nextIndex = currentIndex.current + 1;
-      
+
       if (scrollRef.current) {
         scrollRef.current.scrollTo({
           x: nextIndex * SCREEN_WIDTH,
           animated: true,
         });
       }
-      
+
       currentIndex.current = nextIndex;
-      
+
       // Reset to middle section when reaching the end
       if (nextIndex >= slides.length * 2) {
         setTimeout(() => {
@@ -156,7 +158,7 @@ export default function WhyChooseUs() {
           currentIndex.current = slides.length;
         }, 300);
       }
-      
+
       // Continue auto-scroll
       if (autoScrollTimeout.current) clearTimeout(autoScrollTimeout.current);
       autoScrollTimeout.current = setTimeout(() => {
@@ -167,9 +169,14 @@ export default function WhyChooseUs() {
 
   return (
     <View style={styles.section}>
-      <Text style={styles.title}>Why <Text style={{ color: COLORS.primary }}>StayFindz</Text> Stands Out</Text>
-      <Text style={styles.subtitle}>We redefine travel by focusing on what really matters—authentic experiences and peace of mind.</Text>
-      
+      <Text style={styles.title}>
+        Why <Text style={{ color: COLORS.primary }}>StayFindz</Text> Stands Out
+      </Text>
+      <Text style={styles.subtitle}>
+        We redefine travel by focusing on what really matters—authentic
+        experiences and peace of mind.
+      </Text>
+
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -197,7 +204,7 @@ export default function WhyChooseUs() {
           </View>
         ))}
       </ScrollView>
-      
+
       <View style={styles.badgesRow}>
         {BADGES.map((badge, idx) => (
           <View key={idx} style={styles.badge}>
@@ -212,13 +219,13 @@ export default function WhyChooseUs() {
 
 const styles = StyleSheet.create({
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     paddingVertical: 28,
     paddingHorizontal: 0,
   },
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.text,
     marginLeft: 20,
     marginBottom: 4,
@@ -233,24 +240,24 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   slide: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     width: SCREEN_WIDTH,
     paddingHorizontal: CARD_MARGIN,
   },
   cardsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
   },
   card: {
     width: CARD_WIDTH,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 18,
     paddingHorizontal: 8,
     shadowColor: COLORS.primary,
@@ -259,33 +266,33 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
     borderWidth: 1,
-    borderColor: COLORS.primary + '18',
+    borderColor: COLORS.primary + "18",
   },
   iconCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: COLORS.primary + '11',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: COLORS.primary + "11",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 10,
   },
   cardTitle: {
     fontSize: 15,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.text,
     marginBottom: 4,
-    textAlign: 'center',
+    textAlign: "center",
   },
   cardDesc: {
     color: COLORS.textMuted,
     fontSize: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   badgesRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
     marginTop: 18,
     gap: 12,
   },
@@ -294,17 +301,17 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginHorizontal: 6,
     marginVertical: 4,
   },
   badgeValue: {
     color: COLORS.primary,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 15,
   },
   badgeLabel: {
     color: COLORS.textMuted,
     fontSize: 12,
   },
-}); 
+});

@@ -5,12 +5,10 @@
 ## 🚀 Features
 
 - 🔍 **Browse Listings**
-
   - Search stays based on location, category, and price filters.
   - Filter properties by type (apartments, villas, hotels, etc.).
 
 - 🏡 **View Property Details**
-
   - Access listing pages with full details:
     - Image gallery (stored via Cloudinary)
     - Description and amenities
@@ -18,12 +16,10 @@
     - Host details and reviews (future scope)
 
 - 📅 **Book a Stay**
-
   - Request bookings with check-in/check-out dates and guest count.
   - Supports auto-confirm or host-approved bookings.
 
 - 📦 **Track Booking Status**
-
   - See live updates of your booking states:
     - `Pending`
     - `Confirmed`
@@ -31,25 +27,20 @@
     - `Rejected`
 
 - 💖 **Wishlist Feature**
-
   - Add or remove properties to/from wishlist for later booking.
 
 - 🔄 **Real-Time Updates**
-
   - Get instant UI feedback when booking status changes via **Socket.IO**.
 
 - 🏗️ **Create and Manage Listings**
-
   - Add new properties with image upload and custom details.
   - Edit or delete listings anytime.
 
 - 👥 **Manage Bookings**
-
   - Approve or reject booking requests.
   - See guest details and booking messages.
 
 - ⚡ **Real-Time Notifications**
-
   - Instantly see new bookings and actions via **WebSocket** events.
 
 - 📊 **Host Dashboard**
@@ -59,16 +50,13 @@
 ### 🌐 System-Wide Capabilities
 
 - 🔐 **Authentication & Authorization**
-
   - Secure login/register with JWT tokens.
   - Role-based access for users and hosts.
 
 - ☁️ **Media Uploads**
-
   - Upload property images to **Cloudinary** directly from frontend.
 
 - 🔌 **Socket.IO Integration**
-
   - Real-time updates for bookings, confirmations, and cancellations.
 
 - 📁 **Modular Architecture**

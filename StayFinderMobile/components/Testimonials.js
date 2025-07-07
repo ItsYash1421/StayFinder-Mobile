@@ -165,7 +165,8 @@ export default function Testimonials() {
 const styles = StyleSheet.create({
   section: {
     backgroundColor: COLORS.backgroundSecondary,
-    paddingVertical: 32,
+    top: 10,
+    bottom: 0,
   },
   title: {
     fontSize: 22,
@@ -178,12 +179,14 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   card: {
+    top: 0.05,
     alignItems: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 29,
   },
   cardContent: {
     backgroundColor: "#fff",
     borderRadius: 18,
+    top: -0.5,
     padding: 24,
     alignItems: "center",
     shadowColor: "#000",
@@ -233,7 +236,7 @@ const styles = StyleSheet.create({
   starFilled: {
     color: COLORS.primary,
   },
-  
+
   dotsRow: {
     flexDirection: "row",
     justifyContent: "center",

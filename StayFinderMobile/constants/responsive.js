@@ -1,6 +1,6 @@
-import { Dimensions, Platform } from 'react-native';
+import { Dimensions, Platform } from "react-native";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 // Device breakpoints
 export const BREAKPOINTS = {
@@ -13,21 +13,29 @@ export const BREAKPOINTS = {
 
 // Device detection
 export const isSmallPhone = width < BREAKPOINTS.SMALL_PHONE;
-export const isMediumPhone = width >= BREAKPOINTS.SMALL_PHONE && width < BREAKPOINTS.MEDIUM_PHONE;
-export const isLargePhone = width >= BREAKPOINTS.MEDIUM_PHONE && width < BREAKPOINTS.LARGE_PHONE;
+export const isMediumPhone =
+  width >= BREAKPOINTS.SMALL_PHONE && width < BREAKPOINTS.MEDIUM_PHONE;
+export const isLargePhone =
+  width >= BREAKPOINTS.MEDIUM_PHONE && width < BREAKPOINTS.LARGE_PHONE;
 export const isTablet = width >= BREAKPOINTS.LARGE_PHONE;
 export const isLargeTablet = width >= BREAKPOINTS.LARGE_TABLET;
 
 // Platform detection
-export const isIOS = Platform.OS === 'ios';
-export const isAndroid = Platform.OS === 'android';
+export const isIOS = Platform.OS === "ios";
+export const isAndroid = Platform.OS === "android";
 
 // Screen dimensions
 export const SCREEN_WIDTH = width;
 export const SCREEN_HEIGHT = height;
 
 // Responsive sizing function
-export const getResponsiveSize = (small, medium, large, tablet, largeTablet = tablet) => {
+export const getResponsiveSize = (
+  small,
+  medium,
+  large,
+  tablet,
+  largeTablet = tablet,
+) => {
   if (isLargeTablet) return largeTablet;
   if (isTablet) return tablet;
   if (isLargePhone) return large;
@@ -42,10 +50,10 @@ export const FONT_SIZES = {
   base: getResponsiveSize(14, 16, 18, 20),
   lg: getResponsiveSize(16, 18, 20, 22),
   xl: getResponsiveSize(18, 20, 22, 24),
-  '2xl': getResponsiveSize(20, 22, 24, 26),
-  '3xl': getResponsiveSize(22, 24, 26, 28),
-  '4xl': getResponsiveSize(24, 26, 28, 30),
-  '5xl': getResponsiveSize(26, 28, 30, 32),
+  "2xl": getResponsiveSize(20, 22, 24, 26),
+  "3xl": getResponsiveSize(22, 24, 26, 28),
+  "4xl": getResponsiveSize(24, 26, 28, 30),
+  "5xl": getResponsiveSize(26, 28, 30, 32),
 };
 
 // Responsive spacing
@@ -55,8 +63,8 @@ export const SPACING = {
   md: getResponsiveSize(12, 16, 20, 24),
   lg: getResponsiveSize(16, 20, 24, 32),
   xl: getResponsiveSize(20, 24, 32, 40),
-  '2xl': getResponsiveSize(24, 32, 40, 48),
-  '3xl': getResponsiveSize(32, 40, 48, 56),
+  "2xl": getResponsiveSize(24, 32, 40, 48),
+  "3xl": getResponsiveSize(32, 40, 48, 56),
 };
 
 // Responsive padding/margins
@@ -74,7 +82,7 @@ export const BORDER_RADIUS = {
   md: getResponsiveSize(8, 10, 12, 16),
   lg: getResponsiveSize(12, 16, 18, 24),
   xl: getResponsiveSize(16, 20, 24, 32),
-  '2xl': getResponsiveSize(20, 24, 28, 36),
+  "2xl": getResponsiveSize(20, 24, 28, 36),
 };
 
 // Responsive icon sizes
@@ -84,7 +92,7 @@ export const ICON_SIZES = {
   md: getResponsiveSize(20, 22, 24, 26),
   lg: getResponsiveSize(24, 26, 28, 30),
   xl: getResponsiveSize(28, 30, 32, 36),
-  '2xl': getResponsiveSize(32, 36, 40, 44),
+  "2xl": getResponsiveSize(32, 36, 40, 44),
 };
 
 // Responsive card dimensions
@@ -117,9 +125,9 @@ export const getGridColumns = () => {
 
 // Responsive container width
 export const getContainerWidth = () => {
-  if (isLargeTablet) return '90%';
-  if (isTablet) return '95%';
-  return '100%';
+  if (isLargeTablet) return "90%";
+  if (isTablet) return "95%";
+  return "100%";
 };
 
 // Responsive modal width
@@ -142,31 +150,31 @@ export const getHeaderHeight = () => {
 };
 
 // Responsive shadow
-export const getShadow = (level = 'md') => {
+export const getShadow = (level = "md") => {
   const shadows = {
     sm: {
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.05,
       shadowRadius: 2,
       elevation: 1,
     },
     md: {
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.08,
       shadowRadius: 4,
       elevation: 2,
     },
     lg: {
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.12,
       shadowRadius: 8,
       elevation: 4,
     },
     xl: {
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 8 },
       shadowOpacity: 0.16,
       shadowRadius: 16,
@@ -174,4 +182,4 @@ export const getShadow = (level = 'md') => {
     },
   };
   return shadows[level] || shadows.md;
-}; 
+};

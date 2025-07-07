@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  Alert,
 } from "react-native";
 import {
   COLORS,
@@ -40,10 +39,7 @@ export default function PostCard({
   const handleWishlistPress = (e) => {
     e.stopPropagation();
     if (!user) {
-      Alert.alert("Login Required", "Login to add to your wishlist.", [
-        { text: "Not Now", style: "cancel" },
-        { text: "Login Now", onPress: () => navigation.navigate("Login") },
-      ]);
+      console.log("Login Required");
       return;
     }
     onToggleWishlist();

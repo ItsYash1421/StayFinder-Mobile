@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useRef } from "react";
 import {
   View,
   Text,
@@ -7,21 +7,37 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Alert,
+  Animated,
+  Easing,
 } from "react-native";
-import { COLORS, getResponsiveSize, FONT_SIZES, SPACING, BORDER_RADIUS, getShadow, isTablet, isLargeTablet, getGridColumns } from "../constants/theme";
+import {
+  COLORS,
+  getResponsiveSize,
+  FONT_SIZES,
+  SPACING,
+  BORDER_RADIUS,
+  getShadow,
+  isTablet,
+  isLargeTablet,
+  getGridColumns,
+} from "../constants/theme";
 import { Feather } from "@expo/vector-icons";
 import { AuthContext } from "../context/AuthContext";
 import { api } from "../constants/api";
 import AppHeader from "../components/AppHeader";
 import BecomeHost from "../components/BecomeHost";
 import { useFocusEffect } from "@react-navigation/native";
+import { useToast } from '../context/ToastContext';
+
 
 export default function HostDashboardScreen({ navigation }) {
   const { user, token } = useContext(AuthContext);
+  const toast = useToast();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [imageLoadingStates, setImageLoadingStates] = useState({});
+  const [imageErrorStates, setImageErrorStates] = useState({});
 
   // Fetch host's listings
   const fetchListings = async () => {
@@ -31,9 +47,11 @@ export default function HostDashboardScreen({ navigation }) {
       const response = await api.get("/api/listings", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Filter listings by hostId
+      // Filter listings by hostId (populated object or string)
       const hostListings = response.data.listings.filter(
-        (l) => l.hostId === user?._id
+        (l) =>
+          (typeof l.hostId === "object" && l.hostId._id === user?._id) ||
+          (typeof l.hostId === "string" && l.hostId === user?._id)
       );
       setListings(hostListings);
     } catch (err) {
@@ -46,7 +64,7 @@ export default function HostDashboardScreen({ navigation }) {
   useFocusEffect(
     React.useCallback(() => {
       if (user && token) fetchListings();
-    }, [user, token])
+    }, [user, token]),
   );
 
   // Stats
@@ -59,43 +77,37 @@ export default function HostDashboardScreen({ navigation }) {
 
   // Delete listing
   const handleDeleteListing = async (listingId) => {
-    Alert.alert(
-      "Delete Listing",
-      "Are you sure you want to delete this listing?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const response = await api.delete(
-                `/api/listings/delete-listing/${listingId}`,
-                {
-                  headers: { Authorization: `Bearer ${token}` },
-                }
-              );
+    try {
+      const response = await api.delete(`/api/listings/${listingId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-              if (response.data.success) {
-                setListings(listings.filter((l) => l._id !== listingId));
-                Alert.alert("Success", "Listing deleted successfully");
-              } else {
-                Alert.alert(
-                  "Error",
-                  response.data.message || "Failed to delete listing"
-                );
-              }
-            } catch (err) {
-              console.error("Delete listing error:", err);
-              Alert.alert(
-                "Error",
-                err.response?.data?.message || "Failed to delete listing"
-              );
-            }
-          },
-        },
-      ]
-    );
+      if (response.data.success) {
+        toast.showToast("Listing deleted successfully!", "success");
+        // Remove from local state
+        setListings(prev => prev.filter(listing => listing._id !== listingId));
+      } else {
+        const errorMessage = response.data.message || "Failed to delete listing";
+        toast.showToast(errorMessage, "error");
+      }
+    } catch (error) {
+      console.error("Error deleting listing:", error);
+      const errorMessage = error.response?.data?.message || "Failed to delete listing";
+      toast.showToast(errorMessage, "error");
+    }
+  };
+
+  const handleImageLoadStart = (listingId) => {
+    setImageLoadingStates(prev => ({ ...prev, [listingId]: true }));
+  };
+
+  const handleImageLoadEnd = (listingId) => {
+    setImageLoadingStates(prev => ({ ...prev, [listingId]: false }));
+  };
+
+  const handleImageError = (listingId) => {
+    setImageErrorStates(prev => ({ ...prev, [listingId]: true }));
+    setImageLoadingStates(prev => ({ ...prev, [listingId]: false }));
   };
 
   return (
@@ -113,7 +125,11 @@ export default function HostDashboardScreen({ navigation }) {
         {/* Stats Cards */}
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: "#e0edfa" }]}>
-            <Feather name="home" size={getResponsiveSize(24, 26, 28, 32)} color={COLORS.primary} />
+            <Feather
+              name="home"
+              size={getResponsiveSize(24, 26, 28, 32)}
+              color={COLORS.primary}
+            />
             <Text style={styles.statLabel}>Total Listings</Text>
             <Text style={styles.statValue}>{totalListings}</Text>
           </View>
@@ -150,7 +166,11 @@ export default function HostDashboardScreen({ navigation }) {
           onPress={() => navigation.navigate("CreateListing")}
           activeOpacity={0.85}
         >
-          <Feather name="plus" size={getResponsiveSize(16, 18, 20, 22)} color="#fff" />
+          <Feather
+            name="plus"
+            size={getResponsiveSize(16, 18, 20, 22)}
+            color="#fff"
+          />
           <Text style={styles.addButtonText}>Add New Listing</Text>
         </TouchableOpacity>
         {/* Listings Section */}
@@ -161,9 +181,29 @@ export default function HostDashboardScreen({ navigation }) {
               <ActivityIndicator size="large" color={COLORS.primary} />
               <Text style={styles.loadingText}>Loading your listings...</Text>
             </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Feather name="wifi-off" size={48} color={COLORS.textMuted} />
+              <Text style={styles.errorTitle}>Failed to load listings</Text>
+              <Text style={styles.errorSubtitle}>
+                Please check your internet connection and try again
+              </Text>
+              <TouchableOpacity
+                style={styles.refreshButton}
+                onPress={fetchListings}
+                activeOpacity={0.8}
+              >
+                <Feather name="refresh-cw" size={20} color="#fff" />
+                <Text style={styles.refreshButtonText}>Refresh</Text>
+              </TouchableOpacity>
+            </View>
           ) : listings.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Feather name="home" size={getResponsiveSize(36, 40, 44, 48)} color={COLORS.textMuted} />
+              <Feather
+                name="home"
+                size={getResponsiveSize(36, 40, 44, 48)}
+                color={COLORS.textMuted}
+              />
               <Text style={styles.emptyText}>No listings yet!</Text>
               <TouchableOpacity
                 style={styles.createFirstButton}
@@ -177,97 +217,120 @@ export default function HostDashboardScreen({ navigation }) {
             </View>
           ) : (
             <View style={styles.listingsGrid}>
-              {listings.map((listing) => (
-                <View key={listing._id} style={styles.listingCard}>
-                  <Image
-                    source={{
-                      uri:
-                        listing.images?.[0] ||
-                        "https://via.placeholder.com/300x200?text=Property",
-                    }}
-                    style={styles.listingImage}
-                    resizeMode="cover"
-                  />
-                  <View style={styles.listingInfo}>
-                    <Text style={styles.listingTitle}>{listing.title}</Text>
-                    <View style={styles.listingRow}>
-                      <Feather
-                        name="map-pin"
-                        size={getResponsiveSize(14, 16, 18, 20)}
-                        color={COLORS.textMuted}
-                      />
-                      <Text style={styles.listingLocation}>
-                        {listing.location || "City, Country"}
-                      </Text>
-                    </View>
-                    <View style={styles.listingStatsRow}>
-                      <Text style={styles.listingStat}>
-                        ${listing.price}/night
-                      </Text>
-                      <Text style={styles.listingStat}>
-                        {listing.bedrooms} beds
-                      </Text>
-                      <Text style={styles.listingStat}>
-                        {listing.bathrooms} baths
-                      </Text>
-                    </View>
-                    <View style={styles.amenitiesRow}>
-                      {listing.amenities &&
-                        Object.entries(listing.amenities)
-                          .filter(([_, v]) => v)
-                          .slice(0, 3) // Limit to 3 amenities for better layout
-                          .map(([k]) => (
-                            <View key={k} style={styles.amenityChip}>
-                              <Text style={styles.amenityText}>{k}</Text>
-                            </View>
-                          ))}
-                    </View>
-                    <View style={styles.ratingRow}>
-                      <Feather name="star" size={getResponsiveSize(14, 16, 18, 20)} color="#fbbf24" />
-                      <Text style={styles.ratingText}>
-                        {listing.rating?.toFixed(1) || "New"}
-                      </Text>
-                    </View>
-                    <View style={styles.actionsRow}>
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() =>
-                          navigation.navigate("ListingDetail", {
-                            id: listing._id,
-                          })
-                        }
-                      >
-                        <Feather name="eye" size={getResponsiveSize(14, 16, 18, 20)} color={COLORS.primary} />
-                        <Text style={styles.actionButtonText}>View</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() =>
-                          navigation.navigate("EditListing", { id: listing._id })
-                        }
-                      >
-                        <Feather
-                          name="edit"
-                          size={getResponsiveSize(14, 16, 18, 20)}
-                          color={COLORS.warning || "#eab308"}
+              {listings.map((listing) => {
+                const isImageLoading = imageLoadingStates[listing._id] !== false;
+                const isImageError = imageErrorStates[listing._id] === true;
+                
+                return (
+                  <View key={listing._id} style={styles.listingCard}>
+                    <View style={styles.listingImageContainer}>
+                      {!isImageError && (
+                        <Image
+                          source={{ uri: listing.images?.[0] || "https://via.placeholder.com/300x200?text=Property" }}
+                          style={styles.listingImage}
+                          resizeMode="cover"
+                          onLoadStart={() => handleImageLoadStart(listing._id)}
+                          onLoadEnd={() => handleImageLoadEnd(listing._id)}
+                          onError={() => handleImageError(listing._id)}
                         />
-                        <Text style={styles.actionButtonText}>Edit</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => handleDeleteListing(listing._id)}
-                      >
+                      )}
+                      {(isImageLoading || isImageError) && (
+                        <View style={[styles.listingImage, styles.placeholderContainer]}>
+                          <Feather name="image" size={24} color={COLORS.primary} />
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.listingInfo}>
+                      <Text style={styles.listingTitle}>{listing.title}</Text>
+                      <View style={styles.listingRow}>
                         <Feather
-                          name="trash-2"
+                          name="map-pin"
                           size={getResponsiveSize(14, 16, 18, 20)}
-                          color={COLORS.error || "#ef4444"}
+                          color={COLORS.textMuted}
                         />
-                        <Text style={styles.actionButtonText}>Delete</Text>
-                      </TouchableOpacity>
+                        <Text style={styles.listingLocation}>
+                          {listing.location || "City, Country"}
+                        </Text>
+                      </View>
+                      <View style={styles.listingStatsRow}>
+                        <Text style={styles.listingStat}>
+                          ${listing.price}/night
+                        </Text>
+                        <Text style={styles.listingStat}>
+                          {listing.bedrooms} beds
+                        </Text>
+                        <Text style={styles.listingStat}>
+                          {listing.bathrooms} baths
+                        </Text>
+                      </View>
+                      <View style={styles.amenitiesRow}>
+                        {listing.amenities &&
+                          Object.entries(listing.amenities)
+                            .filter(([_, v]) => v)
+                            .slice(0, 3) // Limit to 3 amenities for better layout
+                            .map(([k]) => (
+                              <View key={k} style={styles.amenityChip}>
+                                <Text style={styles.amenityText}>{k}</Text>
+                              </View>
+                            ))}
+                      </View>
+                      <View style={styles.ratingRow}>
+                        <Feather
+                          name="star"
+                          size={getResponsiveSize(14, 16, 18, 20)}
+                          color="#fbbf24"
+                        />
+                        <Text style={styles.ratingText}>
+                          {listing.rating?.toFixed(1) || "New"}
+                        </Text>
+                      </View>
+                      <View style={styles.actionsRow}>
+                        <TouchableOpacity
+                          style={styles.actionButton}
+                          onPress={() =>
+                            navigation.navigate("ListingDetail", {
+                              id: listing._id,
+                            })
+                          }
+                        >
+                          <Feather
+                            name="eye"
+                            size={getResponsiveSize(14, 16, 18, 20)}
+                            color={COLORS.primary}
+                          />
+                          <Text style={styles.actionButtonText} numberOfLines={1} ellipsizeMode="tail">View</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.actionButton}
+                          onPress={() =>
+                            navigation.navigate("EditListing", {
+                              id: listing._id,
+                            })
+                          }
+                        >
+                          <Feather
+                            name="edit"
+                            size={getResponsiveSize(14, 16, 18, 20)}
+                            color={COLORS.warning || "#eab308"}
+                          />
+                          <Text style={styles.actionButtonText} numberOfLines={1} ellipsizeMode="tail">Edit</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.actionButton}
+                          onPress={() => handleDeleteListing(listing._id)}
+                        >
+                          <Feather
+                            name="trash-2"
+                            size={getResponsiveSize(14, 16, 18, 20)}
+                            color={COLORS.error || "#ef4444"}
+                          />
+                          <Text style={styles.actionButtonText} numberOfLines={1} ellipsizeMode="tail">Delete</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
         </View>
@@ -292,7 +355,7 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveSize(30, 35, 40, 45),
   },
   title: {
-    fontSize: FONT_SIZES['4xl'],
+    fontSize: FONT_SIZES["4xl"],
     fontWeight: "bold",
     color: COLORS.text,
     marginHorizontal: getResponsiveSize(16, 18, 20, 24),
@@ -318,7 +381,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.lg,
     padding: getResponsiveSize(14, 16, 18, 20),
     marginHorizontal: getResponsiveSize(4, 6, 8, 10),
-    ...getShadow('sm'),
+    ...getShadow("sm"),
   },
   statLabel: {
     fontSize: FONT_SIZES.sm,
@@ -327,7 +390,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   statValue: {
-    fontSize: FONT_SIZES['2xl'],
+    fontSize: FONT_SIZES["2xl"],
     fontWeight: "bold",
     color: COLORS.text,
     marginTop: getResponsiveSize(2, 3, 4, 5),
@@ -342,7 +405,7 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveSize(12, 14, 16, 18),
     marginHorizontal: getResponsiveSize(16, 18, 20, 24),
     marginBottom: getResponsiveSize(16, 18, 20, 24),
-    ...getShadow('md'),
+    ...getShadow("md"),
   },
   addButtonText: {
     color: "#fff",
@@ -387,7 +450,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(20, 22, 24, 28),
     paddingVertical: getResponsiveSize(10, 12, 14, 16),
     marginTop: getResponsiveSize(6, 8, 10, 12),
-    ...getShadow('sm'),
+    ...getShadow("sm"),
   },
   createFirstButtonText: {
     color: "#fff",
@@ -405,17 +468,34 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: BORDER_RADIUS.lg,
     marginBottom: getResponsiveSize(10, 12, 14, 16),
-    ...getShadow('sm'),
+    ...getShadow("sm"),
     overflow: "hidden",
-    width: '100%',
-    alignSelf: 'center',
+    width: "100%",
+    alignSelf: "center",
     padding: getResponsiveSize(8, 10, 12, 14),
   },
-  listingImage: {
+  listingImageContainer: {
+    position: "relative",
     width: getResponsiveSize(80, 90, 100, 110),
     height: getResponsiveSize(80, 90, 100, 110),
     borderRadius: BORDER_RADIUS.lg,
     backgroundColor: "#eee",
+  },
+  listingImage: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: "#eee",
+  },
+  placeholderContainer: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: "#eee",
+    alignItems: "center",
+    justifyContent: "center",
   },
   listingInfo: {
     flex: 1,
@@ -485,7 +565,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: getResponsiveSize(6, 8, 10, 12),
     gap: getResponsiveSize(6, 8, 10, 12),
-    flexWrap: 'nowrap',
+    flexWrap: "nowrap",
   },
   actionButton: {
     flexDirection: "row",
@@ -494,13 +574,13 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.sm,
     paddingHorizontal: getResponsiveSize(8, 10, 12, 14),
     paddingVertical: getResponsiveSize(4, 6, 8, 10),
-    minWidth: 0,
+    minWidth: 70,
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     marginRight: getResponsiveSize(4, 6, 8, 10),
   },
   actionButtonText: {
-    fontSize: getResponsiveSize(12, 13, 14, 15),
+    fontSize: 12,
     color: COLORS.text,
     marginLeft: getResponsiveSize(3, 4, 5, 6),
   },
@@ -514,7 +594,36 @@ const styles = StyleSheet.create({
     marginHorizontal: getResponsiveSize(16, 18, 20, 24),
     marginTop: getResponsiveSize(20, 22, 24, 28),
     marginBottom: getResponsiveSize(28, 32, 36, 40),
-    ...getShadow('md'),
+    ...getShadow("md"),
     alignItems: "center",
+  },
+  errorContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: getResponsiveSize(32, 36, 40, 44),
+  },
+  errorTitle: {
+    color: COLORS.textMuted,
+    fontSize: FONT_SIZES.lg,
+    marginTop: getResponsiveSize(10, 12, 14, 16),
+    marginBottom: getResponsiveSize(6, 8, 10, 12),
+  },
+  errorSubtitle: {
+    color: COLORS.textMuted,
+    fontSize: FONT_SIZES.sm,
+    marginBottom: getResponsiveSize(14, 16, 18, 20),
+  },
+  refreshButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: getResponsiveSize(20, 22, 24, 28),
+    paddingVertical: getResponsiveSize(10, 12, 14, 16),
+    marginTop: getResponsiveSize(6, 8, 10, 12),
+    ...getShadow("sm"),
+  },
+  refreshButtonText: {
+    color: "#fff",
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "600",
   },
 });

@@ -3,6 +3,7 @@
 A native iOS app for StayFinder, built with React Native and Expo.
 
 ## Features
+
 - Consistent design and theme with the StayFinder web frontend
 - Connects to the existing backend for authentication, listings, bookings, etc.
 - Core screens: Explore, Login/Register, Profile, Wishlist, My Booking, Host Dashboard, etc.
@@ -12,6 +13,7 @@ A native iOS app for StayFinder, built with React Native and Expo.
 - Placeholders for Google login and push notifications
 
 ## Folder Structure
+
 ```
 StayFinderMobile/
   assets/           # App icons, splash, image placeholders
@@ -23,6 +25,7 @@ StayFinderMobile/
 ```
 
 ## Setup
+
 1. Install dependencies:
    ```sh
    npm install
@@ -34,14 +37,18 @@ StayFinderMobile/
 3. Open in Expo Go on your iOS device.
 
 ## Backend Connection
+
 - Update `constants/api.js` with your backend URL.
 - All API calls use Axios.
 
 ## Theming
+
 - Colors and fonts are defined in `constants/theme.js` for consistency with the web app.
 
 ## Placeholders
+
 - Google login and push notifications are ready for integration (see components/).
 
 ---
-Built with ❤️ for StayFinder. 
+
+Built with ❤️ for StayFinder.

@@ -70,7 +70,7 @@ const listingSchema = new mongoose.Schema(
       checkOutTime: { type: String, default: "11:00" },
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Listing = mongoose.model("Listing", listingSchema);

@@ -1,11 +1,13 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { COLORS } from '../constants/theme';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { COLORS } from "../constants/theme";
 
 export default function PushNotificationPlaceholder() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Push notifications will be supported here.</Text>
+      <Text style={styles.text}>
+        Push notifications will be supported here.
+      </Text>
     </View>
   );
 }
@@ -15,7 +17,7 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: COLORS.backgroundSecondary,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: "center",
     marginVertical: 8,
   },
   text: {
@@ -24,4 +26,4 @@ const styles = StyleSheet.create({
   },
 });
 
-// TODO: Integrate Expo Notifications for push notifications 
+// TODO: Integrate Expo Notifications for push notifications

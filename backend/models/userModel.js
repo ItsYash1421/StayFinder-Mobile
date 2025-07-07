@@ -15,15 +15,15 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       minlength: 6,
-      required: function() {
+      required: function () {
         // Password is required only if it's not a social login
         return !this.googleId;
-      }
+      },
     },
     googleId: {
       type: String,
       unique: true,
-      sparse: true // Allows null/undefined values to be unique
+      sparse: true, // Allows null/undefined values to be unique
     },
     gender: { type: String, enum: ["male", "female"] },
     profileImage: {
@@ -39,9 +39,14 @@ const userSchema = new mongoose.Schema(
       default: "Professional overthinker",
     },
     wishlist: { type: Array, default: [] },
-    role: { type: String, enum: ['user', 'host'], default: 'user', required: true },
+    role: {
+      type: String,
+      enum: ["user", "host"],
+      default: "user",
+      required: true,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // 🔐 Hash password before saving

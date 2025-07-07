@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -20,17 +19,43 @@ import AppHeader from "../components/AppHeader";
 import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
+import { useToast } from '../context/ToastContext';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const redirectUri = AuthSession.makeRedirectUri({ useProxy: true });
 
-const ANDROID_EXTRA_TOP = Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0;
+const ANDROID_EXTRA_TOP =
+  Platform.OS === "android" ? StatusBar.currentHeight || 24 : 0;
 const HEADER_HEIGHT = getHeaderHeight() + ANDROID_EXTRA_TOP;
 
 export default function LoginScreen({ navigation }) {
   const { login } = useContext(AuthContext);
+  const toast = useToast();
+  
+  // Show logout toast when landing on login page after logout
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Check if user just logged out using the logout flag
+      const checkLogout = async () => {
+        try {
+          const justLoggedOut = await AsyncStorage.getItem("justLoggedOut");
+          if (justLoggedOut === "true") {
+            // User just logged out, show toast and clear the flag
+            toast.showToast("Logged out successfully", "info");
+            await AsyncStorage.removeItem("justLoggedOut");
+          }
+        } catch (error) {
+          console.error("Error checking logout status:", error);
+        }
+      };
+      checkLogout();
+    });
+
+    return unsubscribe;
+  }, [navigation, toast]);
   const [formData, setFormData] = useState({
-    emailOrPhone: '',
-    password: '',
+    emailOrPhone: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -43,8 +68,9 @@ export default function LoginScreen({ navigation }) {
       "1085702517310-ruc0mnuai2roucks2i8e4ogh7jfn6i6v.apps.googleusercontent.com",
     iosClientId:
       "1085702517310-sbafv3ihnfvmnl2q9ni2rpieij66k4fu.apps.googleusercontent.com",
-    androidClientId: "1085702517310-fm819crgb6nr797crvme0p0v0si8820s.apps.googleusercontent.com",
-    redirectUri:AuthSession.makeRedirectUri({ useProxy: true }),
+    androidClientId:
+      "1085702517310-fm819crgb6nr797crvme0p0v0si8820s.apps.googleusercontent.com",
+    redirectUri: AuthSession.makeRedirectUri({ useProxy: true }),
   });
 
   useEffect(() => {
@@ -59,12 +85,13 @@ export default function LoginScreen({ navigation }) {
       const response = await api.post("/api/auth/google", { accessToken });
       if (response.data.success) {
         login(response.data.user, response.data.token);
+        toast.showToast("Login successful!", "success");
         navigation.replace("MainTabs");
       } else {
-        Alert.alert("Error", response.data.message || "Google login failed");
+        console.error("Google login failed", response.data.message);
       }
     } catch (error) {
-      Alert.alert("Error", "Google login failed. Please try again.");
+      console.error("Google login failed", error);
     } finally {
       setGoogleLoading(false);
     }
@@ -83,7 +110,10 @@ export default function LoginScreen({ navigation }) {
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^[0-9]{10,15}$/;
-    if (!emailRegex.test(formData.emailOrPhone) && !phoneRegex.test(formData.emailOrPhone)) {
+    if (
+      !emailRegex.test(formData.emailOrPhone) &&
+      !phoneRegex.test(formData.emailOrPhone)
+    ) {
       setError("Please enter a valid email or phone number");
       setLoading(false);
       return;
@@ -97,13 +127,15 @@ export default function LoginScreen({ navigation }) {
 
       if (response.data.success) {
         login(response.data.user, response.data.token);
+        toast.showToast("Login successful!", "success");
         navigation.replace("MainTabs");
       } else {
         setError(response.data.message || "Login failed");
       }
     } catch (error) {
+      console.error("Login failed", error);
       setError(
-        error.response?.data?.message || "An error occurred. Please try again."
+        error.response?.data?.message || "An error occurred. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -228,42 +260,13 @@ export default function LoginScreen({ navigation }) {
               )}
             </TouchableOpacity>
 
-            {/* Divider */}
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Google Login Button */}
-            <TouchableOpacity
-              style={[
-                styles.googleButton,
-                googleLoading && styles.googleButtonDisabled,
-              ]}
-              onPress={handleGoogleLogin}
-              disabled={googleLoading}
-              activeOpacity={0.8}
-            >
-              {googleLoading ? (
-                <ActivityIndicator size="small" color={COLORS.text} />
-              ) : (
-                <>
-                  <View style={styles.googleIcon}>
-                    <Text style={styles.googleIconText}>G</Text>
-                  </View>
-                  <Text style={styles.googleButtonText}>Login with Google</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
             {/* Skip Button */}
             <TouchableOpacity
-              style={styles.skipButton}
+              style={styles.skipLink}
               onPress={handleSkip}
               activeOpacity={0.8}
             >
-              <Text style={styles.skipButtonText}>Skip for now</Text>
+              <Text style={styles.skipLinkText}>Skip for now</Text>
             </TouchableOpacity>
 
             {/* Sign Up Link */}
@@ -393,73 +396,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // Divider styles
-  divider: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 12,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.backgroundSecondary,
-  },
-  dividerText: {
-    color: COLORS.textMuted,
-    top:10,
-    fontSize: 25,
-    marginHorizontal: 16,
-    fontWeight: "600",
-  },
-
-  // Google button styles
-  googleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: COLORS.backgroundSecondary,
-    borderRadius: 12,
-    top:1,
-    paddingVertical: 16,
-    backgroundColor: "#fff",
-    marginBottom: 8,
-  },
-  googleButtonDisabled: {
-    opacity: 0.6,
-  },
-  googleIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#4285f4",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  googleIconText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  googleButtonText: {
-    color: COLORS.text,
-    fontSize: 16,
-    fontWeight: "500",
-  },
-
   // Skip button styles
-  skipButton: {
-    backgroundColor: COLORS.backgroundSecondary,
-    paddingVertical: 16,
-    borderRadius: 12,
+  skipLink: {
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 12,
   },
-  skipButtonText: {
-    color: COLORS.text,
-    fontSize: 16,
+  skipLinkText: {
+    color: COLORS.primary,
     fontWeight: "600",
+    fontSize: 16,
   },
 
   // Sign up link styles

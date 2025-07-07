@@ -24,6 +24,8 @@ import Testimonials from "../components/Testimonials";
 import HostBenefits from "../components/HostBenefits";
 import AppHeader from "../components/AppHeader";
 import BecomeHost from "../components/BecomeHost";
+import { Feather } from "@expo/vector-icons";
+import useWishlist from "../hooks/useWishlist";
 
 // Normalization function to ensure consistent filter structure
 function normalizeFilters(obj = {}) {
@@ -48,6 +50,7 @@ export default function HomeScreen() {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation();
+  const { wishlist, toggleWishlist, getWishlist } = useWishlist();
 
   // Animation refs
   const fadeAnim1 = useRef(new Animated.Value(0)).current;
@@ -61,6 +64,7 @@ export default function HomeScreen() {
   const VISIBLE_CARDS = Math.floor(Dimensions.get("window").width / CARD_WIDTH);
   const [autoScrollIndex, setAutoScrollIndex] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
+  const autoScrollInterval = useRef(null);
 
   useEffect(() => {
     Animated.stagger(180, [
@@ -90,6 +94,11 @@ export default function HomeScreen() {
         useNativeDriver: true,
       }),
     ]).start();
+  }, []);
+
+  // Fetch wishlist when component mounts
+  useEffect(() => {
+    getWishlist();
   }, []);
 
   const fetchListings = async () => {
@@ -127,8 +136,8 @@ export default function HomeScreen() {
   const handleSearch = (params) => {
     const trimmedParams = {
       ...params,
-      search: params.search ? params.search.trim() : '',
-      location: params.location ? params.location.trim() : '',
+      search: params.search ? params.search.trim() : "",
+      location: params.location ? params.location.trim() : "",
     };
     navigation.navigate("Explore", {
       screen: "ExploreMain",
@@ -137,30 +146,18 @@ export default function HomeScreen() {
   };
 
   // Filter out paused listings and duplicate first card at the end for seamless looping
-  const activeListings = listings.filter(listing => listing.status !== 'paused');
+  const activeListings = listings.filter(
+    (listing) => listing.status !== "paused"
+  );
   const carouselData = activeListings.slice(0, 10);
   const infiniteData = [...carouselData, carouselData[0]];
   const lastIndex = carouselData.length - 1;
 
-  // Sync manual scroll with autoScrollIndex and handle seamless swipe
-  const onMomentumScrollEnd = (event) => {
-    const slide = Math.round(event.nativeEvent.contentOffset.x / CARD_WIDTH);
-    if (slide === infiniteData.length - 1) {
-      // If swiped to duplicate, jump to real first
-      setTimeout(() => {
-        scrollRef.current &&
-          scrollRef.current.scrollTo({ x: 0, animated: false });
-      }, 10);
-      setAutoScrollIndex(0);
-    } else {
-      setAutoScrollIndex(slide);
-    }
-  };
-
-  // Auto-scroll logic for Popular Destinations with seamless transition
-  useEffect(() => {
+  // Helper to clear and restart auto-scroll interval
+  const startAutoScroll = useCallback(() => {
+    if (autoScrollInterval.current) clearInterval(autoScrollInterval.current);
     if (!carouselData.length) return;
-    const interval = setInterval(() => {
+    autoScrollInterval.current = setInterval(() => {
       setAutoScrollIndex((prev) => {
         let next = prev + 1;
         if (next > lastIndex) {
@@ -187,30 +184,45 @@ export default function HomeScreen() {
         }
       });
     }, 3000);
-    return () => clearInterval(interval);
-  }, [carouselData.length, CARD_WIDTH, autoScrollIndex]);
+  }, [carouselData.length, CARD_WIDTH, lastIndex]);
 
-  // Reset scroll index if listings change
   useEffect(() => {
-    setAutoScrollIndex(0);
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ x: 0, animated: false });
+    startAutoScroll();
+    return () => {
+      if (autoScrollInterval.current) clearInterval(autoScrollInterval.current);
+    };
+  }, [startAutoScroll]);
+
+  // Sync manual scroll with autoScrollIndex and handle seamless swipe
+  const onMomentumScrollEnd = (event) => {
+    const slide = Math.round(event.nativeEvent.contentOffset.x / CARD_WIDTH);
+    if (slide === infiniteData.length - 1) {
+      // If swiped to duplicate, jump to real first
+      setTimeout(() => {
+        scrollRef.current &&
+          scrollRef.current.scrollTo({ x: 0, animated: false });
+      }, 10);
+      setAutoScrollIndex(0);
+    } else {
+      setAutoScrollIndex(slide);
     }
-  }, [carouselData.length, CARD_WIDTH]);
+    // Reset auto-scroll interval to resume from this index
+    startAutoScroll();
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.backgroundSecondary }}>
       <AppHeader />
       <ScrollView
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: 40, paddingTop: 90 }}
+        contentContainerStyle={{ paddingBottom: 40, paddingTop: 70 }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
       >
         <Animated.View style={{ opacity: fadeAnim1 }}>
-          <HeroSection onSearch={handleSearch} />
+          <HeroSection onSearch={handleSearch} listings={listings} />
         </Animated.View>
         <View style={styles.sectionSpacing} />
         <Animated.View style={{ opacity: fadeAnim2 }}>
@@ -229,13 +241,29 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
           {loading ? (
-            <ActivityIndicator
-              size="large"
-              color={COLORS.primary}
-              style={{ marginTop: 32 }}
-            />
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator
+                size="large"
+                color={COLORS.primary}
+              />
+              <Text style={styles.loadingText}>Loading listings...</Text>
+            </View>
           ) : error ? (
-            <Text style={styles.error}>{error}</Text>
+            <View style={styles.errorContainer}>
+              <Feather name="wifi-off" size={48} color={COLORS.textMuted} />
+              <Text style={styles.errorTitle}>Failed to load listings</Text>
+              <Text style={styles.errorSubtitle}>
+                Please check your internet connection and try again
+              </Text>
+              <TouchableOpacity
+                style={styles.refreshButton}
+                onPress={fetchListings}
+                activeOpacity={0.8}
+              >
+                <Feather name="refresh-cw" size={20} color="#fff" />
+                <Text style={styles.refreshButtonText}>Refresh</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <ScrollView
@@ -267,6 +295,9 @@ export default function HomeScreen() {
                     onPress={() =>
                       navigation.navigate("ListingDetail", { id: listing._id })
                     }
+                    wishlisted={wishlist.includes(listing._id)}
+                    onToggleWishlist={() => toggleWishlist(listing._id, true)}
+                    listingId={listing._id}
                   />
                 ))}
               </ScrollView>
@@ -286,7 +317,6 @@ export default function HomeScreen() {
           <Testimonials />
           <View style={styles.sectionSpacingSmall} />
           <HostBenefits />
-          
         </Animated.View>
       </ScrollView>
     </View>
@@ -326,11 +356,46 @@ const styles = StyleSheet.create({
   card: {
     marginRight: 16,
   },
-  error: {
-    color: COLORS.error,
-    textAlign: "center",
-    marginTop: 32,
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  },
+  loadingText: {
+    color: COLORS.primary,
     fontSize: 16,
+    marginLeft: 8,
+  },
+  errorContainer: {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  },
+  errorTitle: {
+    color: COLORS.text,
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  errorSubtitle: {
+    color: COLORS.textMuted,
+    fontSize: 16,
+    marginBottom: 24,
+  },
+  refreshButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+  },
+  refreshButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 8,
   },
   exploreMoreBtn: {
     flexDirection: "row",

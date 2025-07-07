@@ -3,9 +3,11 @@ import jwt from "jsonwebtoken";
 const authUser = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.replace("Bearer ", "");
-    
+
     if (!token) {
-      return res.status(401).json({ success: false, message: "Not authorized, no token" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Not authorized, no token" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -13,8 +15,10 @@ const authUser = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Auth error:', error);
-    res.status(401).json({ success: false, message: "Not authorized, token failed" });
+    console.error("Auth error:", error);
+    res
+      .status(401)
+      .json({ success: false, message: "Not authorized, token failed" });
   }
 };
 

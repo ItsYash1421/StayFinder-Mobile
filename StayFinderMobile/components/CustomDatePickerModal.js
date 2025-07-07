@@ -1,17 +1,25 @@
-import React from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { Feather } from '@expo/vector-icons';
-import { COLORS } from '../constants/theme';
-import { Calendar } from 'react-native-calendars';
+import React from "react";
+import {
+  Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Platform,
+} from "react-native";
+import { BlurView } from "expo-blur";
+import { Feather } from "@expo/vector-icons";
+import { COLORS } from "../constants/theme";
+import { Calendar } from "react-native-calendars";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 export default function CustomDatePickerModal({
   visible,
   onClose,
   onSelect,
-  type = 'checkIn',
+  type = "checkIn",
 }) {
   return (
     <Modal
@@ -21,29 +29,34 @@ export default function CustomDatePickerModal({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        {Platform.OS === 'ios' ? (
-          <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+        {Platform.OS === "ios" ? (
+          <BlurView
+            intensity={30}
+            tint="dark"
+            style={StyleSheet.absoluteFill}
+          />
         ) : (
           <View style={styles.modalOverlay}>
-            <BlurView intensity={-10} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView
+              intensity={-10}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+            />
             <View style={styles.androidFrosted} />
           </View>
         )}
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
-              Select {type === 'checkIn' ? 'Check-in' : 'Check-out'} Date
+              Select {type === "checkIn" ? "Check-in" : "Check-out"} Date
             </Text>
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.closeButton}
-            >
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Feather name="x" size={24} color={COLORS.text} />
             </TouchableOpacity>
           </View>
           <Calendar
-            onDayPress={day => onSelect(new Date(day.dateString))}
-            minDate={new Date().toISOString().split('T')[0]}
+            onDayPress={(day) => onSelect(new Date(day.dateString))}
+            minDate={new Date().toISOString().split("T")[0]}
             style={{ borderRadius: 12 }}
             theme={{
               selectedDayBackgroundColor: COLORS.primary,
@@ -51,9 +64,9 @@ export default function CustomDatePickerModal({
               arrowColor: COLORS.primary,
               textSectionTitleColor: COLORS.text,
               monthTextColor: COLORS.primary,
-              textDayFontWeight: '500',
-              textMonthFontWeight: 'bold',
-              textDayHeaderFontWeight: 'bold',
+              textDayFontWeight: "500",
+              textMonthFontWeight: "bold",
+              textDayHeaderFontWeight: "bold",
             }}
           />
         </View>
@@ -65,39 +78,39 @@ export default function CustomDatePickerModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   androidFrosted: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0)',
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: "rgba(255, 255, 255, 0)",
+    borderColor: "rgba(0, 0, 0, 0.1)",
     borderWidth: 0.5,
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 20,
     borderRadius: 16,
-    width: width > 400 ? 400 : '80%',
-    maxHeight: '80%',
+    width: width > 400 ? 400 : "80%",
+    maxHeight: "80%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 16,
   },
   modalTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.text,
   },
   closeButton: {
     padding: 8,
   },
-}); 
+});

@@ -22,11 +22,18 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.yashkumarmeena.stayfindermobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-web-browser"]
+    "plugins": ["expo-web-browser"],
+    "scheme": "stayfindermobile",
+    "extra": {
+      "eas": {
+        "projectId": "541f90a7-c5b6-4aab-8f9c-aeaca54cd265"
+      }
+    }
   }
 }

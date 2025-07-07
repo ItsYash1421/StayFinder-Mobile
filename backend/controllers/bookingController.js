@@ -8,7 +8,7 @@ const approveBooking = async (req, res) => {
     const { bookingId, status } = req.body;
     const userId = req.body.userId;
 
-    console.log('🔔 Approve booking request:', { bookingId, status, userId });
+    console.log("🔔 Approve booking request:", { bookingId, status, userId });
 
     const booking = await Booking.findById(bookingId);
 
@@ -24,7 +24,10 @@ const approveBooking = async (req, res) => {
       return res.status(400).json({ message: "Invalid status" });
     }
 
-    console.log('📝 Booking status change:', { oldStatus, newStatus: booking.status });
+    console.log("📝 Booking status change:", {
+      oldStatus,
+      newStatus: booking.status,
+    });
 
     const bookerSocketId = userSocketMap[booking.userId];
     if (bookerSocketId) {
@@ -37,25 +40,28 @@ const approveBooking = async (req, res) => {
     }
 
     await booking.save();
-    console.log('✅ Booking saved with new status:', booking.status);
+    console.log("✅ Booking saved with new status:", booking.status);
 
     // Send notification to guest and host about status change
-    console.log('🔔 Creating notifications...');
+    console.log("🔔 Creating notifications...");
     const listing = await Listing.findById(booking.listingId);
     if (listing) {
-      console.log('📋 Found listing:', listing.title);
-      console.log('👥 Notification recipients:', { guestId: booking.userId, hostId: listing.hostId });
-      
+      console.log("📋 Found listing:", listing.title);
+      console.log("👥 Notification recipients:", {
+        guestId: booking.userId,
+        hostId: listing.hostId,
+      });
+
       await NotificationService.notifyBookingStatusChange(
         booking,
         oldStatus,
         booking.status,
         booking.userId,
-        listing.hostId
+        listing.hostId,
       );
-      console.log('✅ Notifications sent successfully');
+      console.log("✅ Notifications sent successfully");
     } else {
-      console.log('❌ Listing not found for booking:', booking.listingId);
+      console.log("❌ Listing not found for booking:", booking.listingId);
     }
 
     return res.json({
@@ -64,7 +70,7 @@ const approveBooking = async (req, res) => {
       updatedBooking: booking,
     });
   } catch (error) {
-    console.error('❌ Error in approveBooking:', error);
+    console.error("❌ Error in approveBooking:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
@@ -75,7 +81,7 @@ const pauseBooking = async (req, res) => {
     const { bookingId } = req.body;
     const userId = req.body.userId;
 
-    console.log('⏸️ Pause booking request:', { bookingId, userId });
+    console.log("⏸️ Pause booking request:", { bookingId, userId });
 
     const booking = await Booking.findById(bookingId);
 
@@ -86,10 +92,13 @@ const pauseBooking = async (req, res) => {
     const oldStatus = booking.status;
     booking.status = "paused";
 
-    console.log('📝 Booking status change:', { oldStatus, newStatus: booking.status });
+    console.log("📝 Booking status change:", {
+      oldStatus,
+      newStatus: booking.status,
+    });
 
     await booking.save();
-    console.log('✅ Booking paused successfully');
+    console.log("✅ Booking paused successfully");
 
     // Send notification about pause
     const listing = await Listing.findById(booking.listingId);
@@ -99,9 +108,9 @@ const pauseBooking = async (req, res) => {
         oldStatus,
         booking.status,
         booking.userId,
-        listing.hostId
+        listing.hostId,
       );
-      console.log('✅ Pause notification sent');
+      console.log("✅ Pause notification sent");
     }
 
     return res.json({
@@ -110,7 +119,7 @@ const pauseBooking = async (req, res) => {
       updatedBooking: booking,
     });
   } catch (error) {
-    console.error('❌ Error in pauseBooking:', error);
+    console.error("❌ Error in pauseBooking:", error);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };

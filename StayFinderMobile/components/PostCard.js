@@ -1,11 +1,13 @@
-import React, { useContext } from "react";
+import React, { useContext, useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Image,
   TouchableOpacity,
-  Alert,
+  Animated,
+  Easing,
+  Platform,
 } from "react-native";
 import {
   COLORS,
@@ -37,13 +39,53 @@ export default function PostCard({
   const { user } = useContext(AuthContext);
   const navigation = useNavigation();
 
+  // Image loading state
+  const [imgError, setImgError] = useState(false);
+  const [imgLoading, setImgLoading] = useState(true);
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const imageOpacity = useRef(new Animated.Value(0)).current;
+  const [placeholderOpacity] = useState(new Animated.Value(1));
+
+  useEffect(() => {
+    if (imgError || imgLoading) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.15,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      pulseAnim.setValue(1);
+    }
+  }, [imgError, imgLoading]);
+
+  const handleImageLoadEnd = () => {
+    setImgLoading(false);
+    Animated.timing(imageOpacity, {
+      toValue: 1,
+      duration: 350,
+      useNativeDriver: true,
+    }).start();
+    Animated.timing(placeholderOpacity, {
+      toValue: 0,
+      duration: 250,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  };
+
   const handleWishlistPress = (e) => {
     e.stopPropagation();
     if (!user) {
-      Alert.alert("Login Required", "Login to add to your wishlist.", [
-        { text: "Not Now", style: "cancel" },
-        { text: "Login Now", onPress: () => navigation.navigate("Login") },
-      ]);
+      console.log("Login Required");
       return;
     }
     onToggleWishlist();
@@ -51,20 +93,53 @@ export default function PostCard({
 
   return (
     <TouchableOpacity
-      style={[styles.card, style]}
+      style={[
+        styles.card,
+        style,
+        Platform.OS === "android"
+          ? {
+              elevation: 0,
+              shadowColor: undefined,
+              shadowOpacity: 0,
+              shadowRadius: 0,
+              shadowOffset: undefined,
+              borderWidth: 1,
+              borderColor: '#eee',
+            }
+          : {},
+      ]}
       onPress={onPress}
       activeOpacity={0.9}
     >
       <View style={styles.imageWrapper}>
-        <Image
-          source={{ uri: image }}
-          style={styles.image}
-          resizeMode="cover"
-        />
-        <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.3)"]}
-          style={styles.gradientOverlay}
-        />
+        {!imgError && (
+          <Animated.Image
+            source={{ uri: image }}
+            style={[styles.image, { opacity: imageOpacity, zIndex: 1 }]}
+            resizeMode="cover"
+            onError={() => {
+              setImgError(true);
+              placeholderOpacity.setValue(1);
+            }}
+            onLoadEnd={handleImageLoadEnd}
+          />
+        )}
+        <Animated.View
+          style={[
+            styles.image,
+            styles.placeholderContainer,
+            { transform: [{ scale: pulseAnim }], zIndex: 2, opacity: placeholderOpacity },
+          ]}
+        >
+          <Feather name="image" size={48} color={COLORS.primary} />
+        </Animated.View>
+        {/* Gradient overlay for text readability (iOS only) */}
+        {Platform.OS === "ios" && (
+          <LinearGradient
+            colors={["transparent", "rgba(0,0,0,0.3)"]}
+            style={styles.gradientOverlay}
+          />
+        )}
         <TouchableOpacity
           style={styles.wishlistBtn}
           onPress={handleWishlistPress}
@@ -95,6 +170,7 @@ export default function PostCard({
         </View>
 
         <Text style={styles.location} numberOfLines={1}>
+          <Feather name="map-pin" size={getResponsiveSize(13, 14, 15, 16)} color={COLORS.textMuted} style={{ marginRight: 4 }} />
           {location}
         </Text>
 
@@ -158,8 +234,10 @@ export default function PostCard({
           </View>
         </View>
 
-        <Text style={styles.priceLabel}>per night</Text>
-        <Text style={styles.price}><Text style={{fontSize: styles.price.fontSize, fontWeight: styles.price.fontWeight, color: styles.price.color}}>$</Text>{price}</Text>
+        <Text style={styles.price}>
+          ${price}
+          <Text style={styles.priceLabel}>/per night</Text>
+        </Text>
       </View>
     </TouchableOpacity>
   );
@@ -263,7 +341,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xl,
     fontWeight: "bold",
     color: COLORS.primary,
-    marginTop: getResponsiveSize(2, 3, 4, 5),
+    marginTop: getResponsiveSize(10, 12, 14, 16),
   },
   wishlistBtn: {
     position: "absolute",
@@ -272,6 +350,19 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.3)",
     borderRadius: getResponsiveSize(16, 18, 20, 22),
     padding: getResponsiveSize(6, 8, 10, 12),
+    zIndex: 2,
+  },
+  placeholderContainer: {
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderTopLeftRadius: getResponsiveSize(16, 18, 20, 24),
+    borderTopRightRadius: getResponsiveSize(16, 18, 20, 24),
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    left: 0,
+    top: 0,
     zIndex: 2,
   },
 });

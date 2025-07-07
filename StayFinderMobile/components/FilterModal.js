@@ -1,27 +1,66 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Dimensions } from 'react-native';
-import { COLORS, getModalWidth, getResponsiveSize, FONT_SIZES, SPACING, getShadow } from '../constants/theme';
-import { Feather } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Dimensions,
+} from "react-native";
+import {
+  COLORS,
+  getModalWidth,
+  getResponsiveSize,
+  FONT_SIZES,
+  SPACING,
+  getShadow,
+} from "../constants/theme";
+import { Feather } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-export default function FilterModal({ visible, onClose, onApply, currentFilters = {} }) {
+export default function FilterModal({
+  visible,
+  onClose,
+  onApply,
+  currentFilters = {},
+}) {
   const [filters, setFilters] = useState(currentFilters);
 
-  const categories = ['all', 'Beach', 'Mountain', 'City', 'Countryside', 'Luxury', 'Budget', 'Historical', 'Adventure'];
-  const amenities = ['wifi', 'kitchen', 'parking', 'tv', 'fireplace', 'balcony', 'heating', 'bbq'];
+  const categories = [
+    "all",
+    "Beach",
+    "Mountain",
+    "City",
+    "Countryside",
+    "Luxury",
+    "Budget",
+    "Historical",
+    "Adventure",
+  ];
+  const amenities = [
+    "wifi",
+    "kitchen",
+    "parking",
+    "tv",
+    "fireplace",
+    "balcony",
+    "heating",
+    "bbq",
+  ];
 
   const updateFilter = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const toggleAmenity = (amenity) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       amenities: prev.amenities?.includes(amenity)
-        ? prev.amenities.filter(a => a !== amenity)
-        : [...(prev.amenities || []), amenity]
+        ? prev.amenities.filter((a) => a !== amenity)
+        : [...(prev.amenities || []), amenity],
     }));
   };
 
@@ -31,17 +70,32 @@ export default function FilterModal({ visible, onClose, onApply, currentFilters 
   };
 
   const handleReset = () => {
-    setFilters({});
+    const cleared = {
+      search: "",
+      category: "all",
+      minPrice: "",
+      maxPrice: "",
+      guests: "",
+      amenities: [],
+      sortBy: "relevance",
+    };
+    setFilters(cleared);
+    onApply(cleared);
+    onClose();
   };
 
   return (
-    <View style={[styles.overlay, { display: visible ? 'flex' : 'none' }]}>
+    <View style={[styles.overlay, { display: visible ? "flex" : "none" }]}>
       <BlurView intensity={30} tint="light" style={StyleSheet.absoluteFill} />
       <View style={styles.modal}>
         <View style={styles.headerRow}>
           <Text style={styles.header}>Filters</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-            <Feather name="x" size={getResponsiveSize(20, 22, 24, 26)} color={COLORS.text} />
+            <Feather
+              name="x"
+              size={getResponsiveSize(20, 22, 24, 26)}
+              color={COLORS.text}
+            />
           </TouchableOpacity>
         </View>
 
@@ -51,17 +105,8 @@ export default function FilterModal({ visible, onClose, onApply, currentFilters 
           <TextInput
             style={styles.input}
             placeholder="Search properties..."
-            value={filters.search || ''}
-            onChangeText={(text) => updateFilter('search', text)}
-          />
-
-          {/* Location */}
-          <Text style={styles.label}>Location</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter location..."
-            value={filters.location || ''}
-            onChangeText={(text) => updateFilter('location', text)}
+            value={filters.search || ""}
+            onChangeText={(text) => updateFilter("search", text)}
           />
 
           {/* Price Range */}
@@ -71,16 +116,20 @@ export default function FilterModal({ visible, onClose, onApply, currentFilters 
               style={styles.inputSmall}
               placeholder="Min"
               keyboardType="numeric"
-              value={filters.minPrice || ''}
-              onChangeText={(text) => updateFilter('minPrice', text)}
+              value={filters.minPrice || ""}
+              onChangeText={(text) => updateFilter("minPrice", text)}
             />
-            <Text style={{ marginHorizontal: getResponsiveSize(8, 10, 12, 14) }}>-</Text>
+            <Text
+              style={{ marginHorizontal: getResponsiveSize(8, 10, 12, 14) }}
+            >
+              -
+            </Text>
             <TextInput
               style={styles.inputSmall}
               placeholder="Max"
               keyboardType="numeric"
-              value={filters.maxPrice || ''}
-              onChangeText={(text) => updateFilter('maxPrice', text)}
+              value={filters.maxPrice || ""}
+              onChangeText={(text) => updateFilter("maxPrice", text)}
             />
           </View>
 
@@ -90,26 +139,35 @@ export default function FilterModal({ visible, onClose, onApply, currentFilters 
             style={styles.inputSmall}
             placeholder="Number of guests"
             keyboardType="numeric"
-            value={filters.guests || ''}
-            onChangeText={(text) => updateFilter('guests', text)}
+            value={filters.guests || ""}
+            onChangeText={(text) => updateFilter("guests", text)}
           />
 
           {/* Categories */}
           <Text style={styles.label}>Category</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoriesScroll}
+          >
             {categories.map((cat) => (
               <TouchableOpacity
                 key={cat}
                 style={[
                   styles.catBtn,
-                  filters.category === cat && styles.catBtnActive
+                  filters.category === cat && styles.catBtnActive,
                 ]}
-                onPress={() => updateFilter('category', cat)}
+                onPress={() => updateFilter("category", cat)}
               >
-                <Text style={[
-                  styles.catBtnText,
-                  filters.category === cat && { color: COLORS.primary, fontWeight: 'bold' }
-                ]}>
+                <Text
+                  style={[
+                    styles.catBtnText,
+                    filters.category === cat && {
+                      color: COLORS.primary,
+                      fontWeight: "bold",
+                    },
+                  ]}
+                >
                   {cat.charAt(0).toUpperCase() + cat.slice(1)}
                 </Text>
               </TouchableOpacity>
@@ -124,14 +182,20 @@ export default function FilterModal({ visible, onClose, onApply, currentFilters 
                 key={amenity}
                 style={[
                   styles.amenityBtn,
-                  filters.amenities?.includes(amenity) && styles.amenityBtnActive
+                  filters.amenities?.includes(amenity) &&
+                    styles.amenityBtnActive,
                 ]}
                 onPress={() => toggleAmenity(amenity)}
               >
-                <Text style={[
-                  styles.amenityBtnText,
-                  filters.amenities?.includes(amenity) && { color: COLORS.primary, fontWeight: 'bold' }
-                ]}>
+                <Text
+                  style={[
+                    styles.amenityBtnText,
+                    filters.amenities?.includes(amenity) && {
+                      color: COLORS.primary,
+                      fontWeight: "bold",
+                    },
+                  ]}
+                >
                   {amenity.charAt(0).toUpperCase() + amenity.slice(1)}
                 </Text>
               </TouchableOpacity>
@@ -141,20 +205,27 @@ export default function FilterModal({ visible, onClose, onApply, currentFilters 
           {/* Sort By */}
           <Text style={styles.label}>Sort By</Text>
           <View style={styles.sortRow}>
-            {['relevance', 'price-low', 'price-high', 'rating'].map((sort) => (
+            {["relevance", "price-low", "price-high", "rating"].map((sort) => (
               <TouchableOpacity
                 key={sort}
                 style={[
                   styles.sortBtn,
-                  filters.sortBy === sort && styles.sortBtnActive
+                  filters.sortBy === sort && styles.sortBtnActive,
                 ]}
-                onPress={() => updateFilter('sortBy', sort)}
+                onPress={() => updateFilter("sortBy", sort)}
               >
-                <Text style={[
-                  styles.sortBtnText,
-                  filters.sortBy === sort && { color: COLORS.primary, fontWeight: 'bold' }
-                ]}>
-                  {sort.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                <Text
+                  style={[
+                    styles.sortBtnText,
+                    filters.sortBy === sort && {
+                      color: COLORS.primary,
+                      fontWeight: "bold",
+                    },
+                  ]}
+                >
+                  {sort
+                    .replace("-", " ")
+                    .replace(/\b\w/g, (l) => l.toUpperCase())}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -178,38 +249,38 @@ export default function FilterModal({ visible, onClose, onApply, currentFilters 
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 100,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
   modal: {
     width: getModalWidth(),
     maxHeight: SCREEN_HEIGHT * 0.95,
     minHeight: getResponsiveSize(220, 300, 400, 450),
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: getResponsiveSize(10, 14, 18, 22),
     padding: getResponsiveSize(8, 12, 16, 20),
-    ...getShadow('lg'),
+    ...getShadow("lg"),
     flexShrink: 1,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: getResponsiveSize(4, 8, 12, 16),
     marginBottom: getResponsiveSize(4, 8, 12, 16),
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: getResponsiveSize(8, 10, 12, 14),
   },
   header: {
-    fontSize: FONT_SIZES['2xl'],
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES["2xl"],
+    fontWeight: "bold",
     color: COLORS.text,
   },
   closeBtn: {
@@ -220,7 +291,7 @@ const styles = StyleSheet.create({
     minHeight: getResponsiveSize(200, 250, 300, 350),
   },
   label: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.text,
     marginTop: getResponsiveSize(6, 8, 10, 12),
     marginBottom: getResponsiveSize(2, 4, 6, 8),
@@ -241,19 +312,19 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveSize(13, 14, 15, 16),
     color: COLORS.text,
     width: getResponsiveSize(60, 70, 80, 90),
-    textAlign: 'center',
+    textAlign: "center",
   },
   priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: getResponsiveSize(6, 8, 10, 12),
   },
   categoriesScroll: {
     marginBottom: getResponsiveSize(10, 12, 14, 16),
   },
   catBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: COLORS.backgroundSecondary,
     borderRadius: getResponsiveSize(6, 8, 10, 12),
     paddingVertical: getResponsiveSize(4, 6, 8, 10),
@@ -261,19 +332,19 @@ const styles = StyleSheet.create({
     marginRight: getResponsiveSize(4, 6, 8, 10),
   },
   catBtnActive: {
-    backgroundColor: COLORS.primary + '11',
+    backgroundColor: COLORS.primary + "11",
     borderColor: COLORS.primary,
     borderWidth: 1.5,
   },
   catBtnText: {
     marginLeft: getResponsiveSize(3, 4, 6, 8),
-    fontWeight: '500',
+    fontWeight: "500",
     color: COLORS.text,
     fontSize: getResponsiveSize(12, 13, 14, 15),
   },
   amenitiesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: getResponsiveSize(4, 6, 8, 10),
     marginBottom: getResponsiveSize(4, 6, 8, 10),
   },
@@ -286,7 +357,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveSize(4, 6, 8, 10),
   },
   amenityBtnActive: {
-    backgroundColor: COLORS.primary + '11',
+    backgroundColor: COLORS.primary + "11",
     borderColor: COLORS.primary,
     borderWidth: 1.5,
   },
@@ -295,7 +366,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveSize(12, 13, 14, 15),
   },
   sortRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: getResponsiveSize(4, 6, 8, 10),
     marginBottom: getResponsiveSize(10, 12, 16, 18),
   },
@@ -306,7 +377,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(8, 10, 12, 14),
   },
   sortBtnActive: {
-    backgroundColor: COLORS.primary + '11',
+    backgroundColor: COLORS.primary + "11",
     borderColor: COLORS.primary,
     borderWidth: 1.5,
   },
@@ -315,9 +386,9 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveSize(12, 13, 14, 15),
   },
   actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: getResponsiveSize(6, 8, 10, 12),
   },
   resetBtn: {
@@ -328,7 +399,7 @@ const styles = StyleSheet.create({
   },
   resetBtnText: {
     color: COLORS.text,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: getResponsiveSize(14, 15, 16, 17),
   },
   applyBtn: {
@@ -338,8 +409,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveSize(12, 14, 16, 18),
   },
   applyBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
     fontSize: getResponsiveSize(14, 15, 16, 17),
   },
-}); 
+});

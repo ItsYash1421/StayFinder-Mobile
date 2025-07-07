@@ -1,6 +1,9 @@
 import express from "express";
 import authUser from "../middleware/authUser.js";
-import { approveBooking, pauseBooking } from "../controllers/bookingController.js";
+import {
+  approveBooking,
+  pauseBooking,
+} from "../controllers/bookingController.js";
 import NotificationService from "../services/notificationService.js";
 import Booking from "../models/bookingModel.js";
 import Listing from "../models/listingModel.js";
@@ -10,15 +13,24 @@ const bookingRoutes = express.Router();
 // Create new booking
 bookingRoutes.post("/", authUser, async (req, res) => {
   try {
-    console.log('Incoming booking request body:', req.body); // Debug log
-    const { propertyId, propertyTitle, checkIn, checkOut, amountPaid, guestName } = req.body;
-    
+    console.log("Incoming booking request body:", req.body); // Debug log
+    const {
+      propertyId,
+      propertyTitle,
+      checkIn,
+      checkOut,
+      amountPaid,
+      guestName,
+    } = req.body;
+
     // Get property owner ID first
     const listing = await Listing.findById(propertyId);
     if (!listing) {
-      return res.status(404).json({ success: false, error: 'Listing not found' });
+      return res
+        .status(404)
+        .json({ success: false, error: "Listing not found" });
     }
-    
+
     const booking = new Booking({
       listingId: propertyId,
       userId: req.user.id,
@@ -27,20 +39,29 @@ bookingRoutes.post("/", authUser, async (req, res) => {
       endDate: checkOut,
       totalPrice: amountPaid,
       listing: { title: propertyTitle },
-      status: 'pending'
+      status: "pending",
     });
-    
+
     await booking.save();
-    console.log('Booking saved:', booking); // Debug log
+    console.log("Booking saved:", booking); // Debug log
 
     // Create notifications
-    console.log('Creating notification for booking:', booking._id, 'Owner:', listing.hostId); // Debug log
-    await NotificationService.notifyBookingCreated(booking, req.user.id, listing.hostId);
-    console.log('Notification creation attempted'); // Debug log
+    console.log(
+      "Creating notification for booking:",
+      booking._id,
+      "Owner:",
+      listing.hostId,
+    ); // Debug log
+    await NotificationService.notifyBookingCreated(
+      booking,
+      req.user.id,
+      listing.hostId,
+    );
+    console.log("Notification creation attempted"); // Debug log
 
     res.status(201).json({ success: true, booking });
   } catch (error) {
-    console.error('Error creating booking:', error);
+    console.error("Error creating booking:", error);
     res.status(400).json({ success: false, error: error.message });
   }
 });
@@ -50,9 +71,11 @@ bookingRoutes.put("/:id/status", authUser, async (req, res) => {
   try {
     const { status } = req.body;
     const booking = await Booking.findById(req.params.id);
-    
+
     if (!booking) {
-      return res.status(404).json({ success: false, error: 'Booking not found' });
+      return res
+        .status(404)
+        .json({ success: false, error: "Booking not found" });
     }
 
     const oldStatus = booking.status;
@@ -64,17 +87,17 @@ bookingRoutes.put("/:id/status", authUser, async (req, res) => {
     if (listing) {
       // Create notifications for status change
       await NotificationService.notifyBookingStatusChange(
-        booking, 
-        oldStatus, 
-        status, 
-        booking.userId, 
-        listing.hostId
+        booking,
+        oldStatus,
+        status,
+        booking.userId,
+        listing.hostId,
       );
     }
 
     res.json({ success: true, booking });
   } catch (error) {
-    console.error('Error updating booking status:', error);
+    console.error("Error updating booking status:", error);
     res.status(400).json({ success: false, error: error.message });
   }
 });

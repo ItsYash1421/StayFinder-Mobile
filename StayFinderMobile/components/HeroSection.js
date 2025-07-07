@@ -1,18 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Modal, Animated, Dimensions, Platform } from 'react-native';
-import { COLORS } from '../constants/theme';
-import CustomDatePickerModal from './CustomDatePickerModal';
-import { Feather } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  Animated,
+  Dimensions,
+  Platform,
+} from "react-native";
+import { COLORS } from "../constants/theme";
+import CustomDatePickerModal from "./CustomDatePickerModal";
+import { Feather } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { api } from "../constants/api";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const TAGS = [
-  'Beachfront',
-  'Mountain View',
-  'Luxury',
-  'Budget',
-  'Family Friendly',
+  "Beachfront",
+  "Mountain View",
+  "Luxury",
+  "Budget",
+  "Family Friendly",
 ];
 
 // Wave Animation Component
@@ -130,40 +142,92 @@ const WaveAnimation = () => {
   );
 };
 
-export default function HeroSection({ onSearch }) {
-  const [location, setLocation] = useState('');
+export default function HeroSection({ onSearch, listings = [] }) {
+  console.log('HeroSection listings:', listings);
+  const [location, setLocation] = useState("");
   const [date, setDate] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [guests, setGuests] = useState(null);
   const [showGuestPicker, setShowGuestPicker] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const [allLocations, setAllLocations] = useState([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
+
+  // Fetch unique locations from backend on mount
+  useEffect(() => {
+    let mounted = true;
+    setLocationsLoading(true);
+    api.get("/api/listings/locations")
+      .then(res => {
+        if (mounted && Array.isArray(res.data.locations)) {
+          setAllLocations(res.data.locations.filter(Boolean));
+        }
+      })
+      .catch(err => {
+        // fallback to extracting from listings if API fails
+        setAllLocations(Array.from(new Set(listings.map((l) => l.location && l.location.trim()).filter(Boolean))));
+      })
+      .finally(() => {
+        if (mounted) setLocationsLoading(false);
+      });
+    return () => { mounted = false; };
+  }, [listings]);
+
+  // Use allLocations for suggestions
+  const destinations = allLocations;
+  // Improved fuzzy/word-based suggestions
+  const input = location.trim().toLowerCase();
+  let wordStartsWithMatches = [];
+  let includesMatches = [];
+  if (input) {
+    wordStartsWithMatches = destinations.filter((d) =>
+      d
+        .toLowerCase()
+        .split(/\s|,|-/)
+        .some((word) => word.startsWith(input))
+    );
+    includesMatches = destinations.filter((d) =>
+      !wordStartsWithMatches.includes(d) &&
+      d.toLowerCase().includes(input)
+    );
+  }
+  const suggestions = input
+    ? [...wordStartsWithMatches, ...includesMatches].slice(0, 3)
+    : [];
 
   const formatDateDisplay = (date) => {
-    if (!date) return 'Select dates';
+    if (!date) return "Select dates";
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     if (date.toDateString() === today.toDateString()) {
-      return 'Today';
+      return "Today";
     } else if (date.toDateString() === tomorrow.toDateString()) {
-      return 'Tomorrow';
+      return "Tomorrow";
     } else {
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        weekday: 'short',
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        weekday: "short",
       });
     }
   };
 
-  const guestPlaceholder = guests ? `${guests} guest${guests > 1 ? 's' : ''}` : 'Guests';
+  const guestPlaceholder = guests
+    ? `${guests} guest${guests > 1 ? "s" : ""}`
+    : "Guests";
 
   return (
     <View style={styles.gradientBg}>
       <WaveAnimation />
-      <ScrollView contentContainerStyle={styles.heroContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.heroContent}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Find Your Perfect Stay</Text>
         <Text style={styles.subtitle}>
-          Discover unique places to stay around the world with our curated selection of hotels
+          Discover unique places to stay around the world with our curated
+          selection of hotels
         </Text>
         <View style={styles.tagsRow}>
           {TAGS.map((tag) => (
@@ -173,34 +237,112 @@ export default function HeroSection({ onSearch }) {
           ))}
         </View>
         <View style={styles.searchBox}>
-          <TextInput
-            style={styles.input}
-            placeholder="Where are you going?"
-            placeholderTextColor="#888"
-            value={location}
-            onChangeText={setLocation}
-          />
+          <View style={{ position: 'relative' }}>
+            <TextInput
+              style={styles.input}
+              placeholder="Where are you going?"
+              placeholderTextColor="#888"
+              value={location}
+              onChangeText={setLocation}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => setTimeout(() => setIsInputFocused(false), 150)}
+              autoCorrect={false}
+              autoCapitalize="words"
+            />
+            {/* Suggestions dropdown */}
+            {isInputFocused && location.trim() && (
+              <View style={{
+                position: 'absolute',
+                top: 48,
+                left: 0,
+                right: 0,
+                backgroundColor: '#fff',
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: '#eee',
+                zIndex: 100,
+                shadowColor: '#000',
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 20,
+                minHeight: 10,
+              }}>
+                {locationsLoading ? (
+                  <Text style={{ padding: 16, color: COLORS.textMuted, textAlign: 'center' }}>Loading suggestions...</Text>
+                ) : suggestions.length > 0 ? (
+                  suggestions.map((dest, idx) => (
+                    <TouchableOpacity
+                      key={dest}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        borderBottomWidth: idx !== suggestions.length - 1 ? 1 : 0,
+                        borderBottomColor: '#f3f3f3',
+                      }}
+                      activeOpacity={0.85}
+                      onPress={() => {
+                        setLocation(dest);
+                        setIsInputFocused(false);
+                        onSearch && onSearch({ search: dest, date, guests });
+                      }}
+                    >
+                      <Feather name="map-pin" size={18} color={COLORS.primary} style={{ marginRight: 10 }} />
+                      <View>
+                        <Text style={{ fontWeight: 'bold', fontSize: 16, color: COLORS.text }}>{dest}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <Text style={{ padding: 16, color: COLORS.textMuted, textAlign: 'center' }}>No destinations found</Text>
+                )}
+              </View>
+            )}
+          </View>
           <TouchableOpacity
-            style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+            style={[
+              styles.input,
+              {
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              },
+            ]}
             onPress={() => setShowDatePicker(true)}
             activeOpacity={0.8}
           >
-            <Text style={{ color: date ? COLORS.text : '#888', fontSize: 15 }}>
+            <Text style={{ color: date ? COLORS.text : "#888", fontSize: 15 }}>
               {formatDateDisplay(date)}
             </Text>
             <Feather name="calendar" size={18} color={COLORS.primary} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+            style={[
+              styles.input,
+              {
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              },
+            ]}
             onPress={() => setShowGuestPicker(true)}
             activeOpacity={0.8}
           >
-            <Text style={{ color: guests ? COLORS.text : '#888', fontSize: 15 }}>
+            <Text
+              style={{ color: guests ? COLORS.text : "#888", fontSize: 15 }}
+            >
               {guestPlaceholder}
             </Text>
             <Feather name="users" size={18} color={COLORS.primary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.searchBtn} onPress={() => onSearch && onSearch({ search: location.trim(), date, guests })}>
+          <TouchableOpacity
+            style={styles.searchBtn}
+            onPress={() =>
+              onSearch && onSearch({ search: location.trim(), date, guests })
+            }
+          >
             <Text style={styles.searchBtnText}>Search</Text>
           </TouchableOpacity>
         </View>
@@ -226,7 +368,7 @@ export default function HeroSection({ onSearch }) {
         animationType="fade"
         onRequestClose={() => setShowGuestPicker(false)}
       >
-        {Platform.OS === 'android' ? (
+        {Platform.OS === "android" ? (
           <BlurView intensity={-10} tint="dark" style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
@@ -238,13 +380,16 @@ export default function HeroSection({ onSearch }) {
                   <Feather name="x" size={24} color={COLORS.text} />
                 </TouchableOpacity>
               </View>
-              <ScrollView contentContainerStyle={styles.guestListContainer} showsVerticalScrollIndicator={false}>
+              <ScrollView
+                contentContainerStyle={styles.guestListContainer}
+                showsVerticalScrollIndicator={false}
+              >
                 {[...Array(10)].map((_, i) => (
                   <TouchableOpacity
                     key={i + 1}
                     style={[
                       styles.guestOption,
-                      guests === i + 1 && styles.guestOptionSelected
+                      guests === i + 1 && styles.guestOptionSelected,
                     ]}
                     onPress={() => {
                       setGuests(i + 1);
@@ -252,27 +397,37 @@ export default function HeroSection({ onSearch }) {
                     }}
                     activeOpacity={0.85}
                   >
-                    <Text style={[
-                      styles.guestOptionLabel,
-                      guests === i + 1 && styles.guestOptionLabelSelected
-                    ]}>
-                      {i + 1} guest{i !== 0 ? 's' : ''}
+                    <Text
+                      style={[
+                        styles.guestOptionLabel,
+                        guests === i + 1 && styles.guestOptionLabelSelected,
+                      ]}
+                    >
+                      {i + 1} guest{i !== 0 ? "s" : ""}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-              <TouchableOpacity 
-                style={{ 
-                  alignItems: 'center', 
-                  marginTop: 10, 
-                  paddingVertical: 10, 
-                  backgroundColor: COLORS.backgroundSecondary, 
-                  borderRadius: 8, 
-                  paddingHorizontal: 24 
-                }} 
+              <TouchableOpacity
+                style={{
+                  alignItems: "center",
+                  marginTop: 10,
+                  paddingVertical: 10,
+                  backgroundColor: COLORS.backgroundSecondary,
+                  borderRadius: 8,
+                  paddingHorizontal: 24,
+                }}
                 onPress={() => setShowGuestPicker(false)}
               >
-                <Text style={{ color: COLORS.primary, fontWeight: 'bold', fontSize: 16 }}>Cancel</Text>
+                <Text
+                  style={{
+                    color: COLORS.primary,
+                    fontWeight: "bold",
+                    fontSize: 16,
+                  }}
+                >
+                  Cancel
+                </Text>
               </TouchableOpacity>
             </View>
           </BlurView>
@@ -288,13 +443,16 @@ export default function HeroSection({ onSearch }) {
                   <Feather name="x" size={24} color={COLORS.text} />
                 </TouchableOpacity>
               </View>
-              <ScrollView contentContainerStyle={styles.guestListContainer} showsVerticalScrollIndicator={false}>
+              <ScrollView
+                contentContainerStyle={styles.guestListContainer}
+                showsVerticalScrollIndicator={false}
+              >
                 {[...Array(10)].map((_, i) => (
                   <TouchableOpacity
                     key={i + 1}
                     style={[
                       styles.guestOption,
-                      guests === i + 1 && styles.guestOptionSelected
+                      guests === i + 1 && styles.guestOptionSelected,
                     ]}
                     onPress={() => {
                       setGuests(i + 1);
@@ -302,27 +460,37 @@ export default function HeroSection({ onSearch }) {
                     }}
                     activeOpacity={0.85}
                   >
-                    <Text style={[
-                      styles.guestOptionLabel,
-                      guests === i + 1 && styles.guestOptionLabelSelected
-                    ]}>
-                      {i + 1} guest{i !== 0 ? 's' : ''}
+                    <Text
+                      style={[
+                        styles.guestOptionLabel,
+                        guests === i + 1 && styles.guestOptionLabelSelected,
+                      ]}
+                    >
+                      {i + 1} guest{i !== 0 ? "s" : ""}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-              <TouchableOpacity 
-                style={{ 
-                  alignItems: 'center', 
-                  marginTop: 10, 
-                  paddingVertical: 10, 
-                  backgroundColor: COLORS.backgroundSecondary, 
-                  borderRadius: 8, 
-                  paddingHorizontal: 24 
-                }} 
+              <TouchableOpacity
+                style={{
+                  alignItems: "center",
+                  marginTop: 10,
+                  paddingVertical: 10,
+                  backgroundColor: COLORS.backgroundSecondary,
+                  borderRadius: 8,
+                  paddingHorizontal: 24,
+                }}
                 onPress={() => setShowGuestPicker(false)}
               >
-                <Text style={{ color: COLORS.primary, fontWeight: 'bold', fontSize: 16 }}>Cancel</Text>
+                <Text
+                  style={{
+                    color: COLORS.primary,
+                    fontWeight: "bold",
+                    fontSize: 16,
+                  }}
+                >
+                  Cancel
+                </Text>
               </TouchableOpacity>
             </View>
           </BlurView>
@@ -340,46 +508,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   heroContent: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: 20,
   },
   title: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 32,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
     marginBottom: 18,
-    textAlign: 'center',
+    textAlign: "center",
   },
   tagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     marginBottom: 18,
   },
   tag: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,
     margin: 4,
   },
   tagText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 13,
   },
   searchBox: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 16,
-    width: '100%',
+    width: "100%",
     marginBottom: 18,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
@@ -387,7 +555,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#eee",
     paddingVertical: 8,
     marginBottom: 10,
     fontSize: 15,
@@ -397,66 +565,66 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     borderRadius: 8,
     paddingVertical: 12,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 8,
   },
   searchBtnText: {
-    color: '#fff',
-    fontWeight: 'bold',
+    color: "#fff",
+    fontWeight: "bold",
     fontSize: 16,
   },
   trustRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
     marginTop: 8,
     gap: 8,
   },
   trustText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 13,
     marginHorizontal: 8,
     marginVertical: 2,
   },
   guestModalOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 10,
   },
   guestModalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 24,
     width: 280,
-    alignItems: 'center',
+    alignItems: "center",
   },
   guestModalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 16,
     color: COLORS.text,
   },
   guestOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 10,
     paddingHorizontal: 18,
     marginVertical: 2,
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: "transparent",
     minWidth: 180,
   },
   guestOptionSelected: {
-    backgroundColor: 'rgba(244,63,94,0.10)', // Soft primary color
+    backgroundColor: "rgba(244,63,94,0.10)", // Soft primary color
     borderColor: COLORS.primary,
     borderWidth: 1.5,
     shadowColor: COLORS.primary,
@@ -468,54 +636,54 @@ const styles = StyleSheet.create({
   guestOptionLabel: {
     fontSize: 17,
     color: COLORS.text,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   guestOptionLabelSelected: {
     color: COLORS.primary,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   guestCheckIcon: {
     marginLeft: 12,
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   androidFrosted: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderColor: 'rgba(0,0,0,0.10)',
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderColor: "rgba(0,0,0,0.10)",
     borderWidth: 0.5,
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 24,
-    width: '80%',
-    alignItems: 'center',
+    width: "80%",
+    alignItems: "center",
   },
   modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
     marginBottom: 16,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.text,
   },
   closeButton: {
     padding: 8,
   },
   guestListContainer: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   waveContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -523,22 +691,22 @@ const styles = StyleSheet.create({
     zIndex: -1,
   },
   wave: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
   },
   wave1: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: "rgba(255,255,255,0.1)",
   },
   wave2: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: "rgba(255,255,255,0.2)",
   },
   wave3: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: "rgba(255,255,255,0.3)",
   },
   wave4: {
-    backgroundColor: 'rgba(255,255,255,0.4)',
+    backgroundColor: "rgba(255,255,255,0.4)",
   },
-}); 
+});

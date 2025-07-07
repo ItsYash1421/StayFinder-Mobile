@@ -2,8 +2,16 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StatusBar } from "expo-status-bar";
-import { COLORS, getTabBarHeight, getResponsiveSize, ICON_SIZES, FONT_SIZES, getShadow } from "./constants/theme";
 import {
+  COLORS,
+  getTabBarHeight,
+  getResponsiveSize,
+  ICON_SIZES,
+  FONT_SIZES,
+  getShadow,
+} from "./constants/theme";
+import {
+  TestImageSliderScreen,
   HomeScreen,
   LoginScreen,
   RegisterScreen,
@@ -17,10 +25,14 @@ import {
   HostDashboardScreen,
   GuestRequestScreen,
   BecomeHostScreen,
+  DestinationDetailScreen,
 } from "./screens";
 import { AuthProvider, AuthContext } from "./context/AuthContext";
+import { ToastProvider } from "./context/ToastContext";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { WishlistProvider } from './context/WishlistContext';
+
 import {
   View,
   Text,
@@ -90,8 +102,8 @@ function CustomTabBar({ state, descriptors, navigation }) {
             options.tabBarLabel !== undefined
               ? options.tabBarLabel
               : options.title !== undefined
-              ? options.title
-              : route.name;
+                ? options.title
+                : route.name;
           const isFocused = state.index === index;
 
           const onPress = () => {
@@ -187,7 +199,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
                   {
                     transform: [{ scale: tabAnimations[route.name] }],
                     // Only apply shadow/elevation for iOS
-                    ...(Platform.OS === 'ios' && isFocused
+                    ...(Platform.OS === "ios" && isFocused
                       ? {
                           shadowColor: COLORS.primary,
                           shadowOffset: { width: 0, height: 2 },
@@ -196,7 +208,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
                           elevation: 8,
                         }
                       : {
-                          shadowColor: 'transparent',
+                          shadowColor: "transparent",
                           shadowOffset: { width: 0, height: 0 },
                           shadowOpacity: 0,
                           shadowRadius: 0,
@@ -208,10 +220,23 @@ function CustomTabBar({ state, descriptors, navigation }) {
                 {/* Render icon and label for all tabs, no circle or background for selected */}
                 <Feather
                   name={iconName}
-                  size={isFocused ? getResponsiveSize(28, 30, 32, 34) : getResponsiveSize(22, 24, 26, 28)}
+                  size={
+                    isFocused
+                      ? getResponsiveSize(28, 30, 32, 34)
+                      : getResponsiveSize(22, 24, 26, 28)
+                  }
                   color={isFocused ? COLORS.primary : COLORS.textMuted}
                 />
-                <Text style={[styles.tabLabel, isFocused ? { color: COLORS.primary, fontWeight: 'bold' } : null]}>{label}</Text>
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    isFocused
+                      ? { color: COLORS.primary, fontWeight: "bold" }
+                      : null,
+                  ]}
+                >
+                  {label}
+                </Text>
               </Animated.View>
             </TouchableOpacity>
           );
@@ -372,7 +397,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
                   }}
                   onPress={() => {
                     setShowMoreModal(false);
-                    navigation.navigate("GuestRequestScreen");
+                    navigation.navigate("GuestRequestStack");
                   }}
                 >
                   <Feather
@@ -399,10 +424,8 @@ function CustomTabBar({ state, descriptors, navigation }) {
                 }}
                 onPress={async () => {
                   setShowMoreModal(false);
-                  // Add a brief visual feedback delay for ultra-smooth experience
-                  setTimeout(async () => {
-                    await logout(navigation);
-                  }, 50);
+                  // Immediate logout without delay
+                  await logout(navigation);
                 }}
                 activeOpacity={0.7}
               >
@@ -513,7 +536,7 @@ function HomeStack() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        gestureDirection: "vertical",
+        gestureDirection: "horizontal",
       }}
     >
       <Stack.Screen name="HomeMain" component={HomeScreen} />
@@ -540,7 +563,7 @@ function HomeStack() {
             },
           }),
           gestureEnabled: true,
-          gestureDirection: "vertical",
+          gestureDirection: "horizontal",
         }}
       />
     </Stack.Navigator>
@@ -553,10 +576,36 @@ function ExploreStack() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        gestureDirection: "vertical",
+        gestureDirection: "horizontal",
       }}
     >
       <Stack.Screen name="ExploreMain" component={ExploreScreen} />
+      <Stack.Screen
+        name="DestinationDetail"
+        component={DestinationDetailScreen}
+        options={{
+          cardStyleInterpolator: ({ current }) => ({
+            cardStyle: {
+              transform: [
+                {
+                  translateY: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [height, 0],
+                    extrapolate: "clamp",
+                  }),
+                },
+              ],
+              opacity: current.progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 1],
+                extrapolate: "clamp",
+              }),
+            },
+          }),
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
+        }}
+      />
       <Stack.Screen
         name="ListingDetail"
         component={ListingDetailScreen}
@@ -580,7 +629,7 @@ function ExploreStack() {
             },
           }),
           gestureEnabled: true,
-          gestureDirection: "vertical",
+          gestureDirection: "horizontal",
         }}
       />
     </Stack.Navigator>
@@ -593,7 +642,7 @@ function WishlistStack() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        gestureDirection: "vertical",
+        gestureDirection: "horizontal",
       }}
     >
       <Stack.Screen name="WishlistMain" component={WishlistScreen} />
@@ -620,7 +669,7 @@ function WishlistStack() {
             },
           }),
           gestureEnabled: true,
-          gestureDirection: "vertical",
+          gestureDirection: "horizontal",
         }}
       />
     </Stack.Navigator>
@@ -633,10 +682,36 @@ function BookingsStack() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        gestureDirection: "vertical",
+        gestureDirection: "horizontal",
       }}
     >
       <Stack.Screen name="BookingsMain" component={MyBookingScreen} />
+      <Stack.Screen
+        name="ListingDetail"
+        component={ListingDetailScreen}
+        options={{
+          cardStyleInterpolator: ({ current }) => ({
+            cardStyle: {
+              transform: [
+                {
+                  translateY: current.progress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [height, 0],
+                    extrapolate: "clamp",
+                  }),
+                },
+              ],
+              opacity: current.progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 1],
+                extrapolate: "clamp",
+              }),
+            },
+          }),
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
+        }}
+      />
     </Stack.Navigator>
   );
 }
@@ -647,7 +722,7 @@ function HostStack() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        gestureDirection: "vertical",
+        gestureDirection: "horizontal",
       }}
     >
       <Stack.Screen name="HostMain" component={HostDashboardScreen} />
@@ -674,7 +749,7 @@ function HostStack() {
             },
           }),
           gestureEnabled: true,
-          gestureDirection: "vertical",
+          gestureDirection: "horizontal",
         }}
       />
       <Stack.Screen
@@ -700,7 +775,7 @@ function HostStack() {
             },
           }),
           gestureEnabled: true,
-          gestureDirection: "vertical",
+          gestureDirection: "horizontal",
         }}
       />
       <Stack.Screen
@@ -726,7 +801,7 @@ function HostStack() {
             },
           }),
           gestureEnabled: true,
-          gestureDirection: "vertical",
+          gestureDirection: "horizontal",
         }}
       />
       <Stack.Screen
@@ -752,7 +827,7 @@ function HostStack() {
             },
           }),
           gestureEnabled: true,
-          gestureDirection: "vertical",
+          gestureDirection: "horizontal",
         }}
       />
     </Stack.Navigator>
@@ -765,7 +840,7 @@ function ProfileStack() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        gestureDirection: "vertical",
+        gestureDirection: "horizontal",
       }}
     >
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />
@@ -779,7 +854,7 @@ function BecomeHostStack() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        gestureDirection: "vertical",
+        gestureDirection: "horizontal",
       }}
     >
       <Stack.Screen name="BecomeHostIntro" component={BecomeHostScreen} />
@@ -806,7 +881,7 @@ function BecomeHostStack() {
             },
           }),
           gestureEnabled: true,
-          gestureDirection: "vertical",
+          gestureDirection: "horizontal",
         }}
       />
       <Stack.Screen
@@ -832,9 +907,23 @@ function BecomeHostStack() {
             },
           }),
           gestureEnabled: true,
-          gestureDirection: "vertical",
+          gestureDirection: "horizontal",
         }}
       />
+    </Stack.Navigator>
+  );
+}
+
+function GuestRequestStack() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: true,
+        gestureDirection: "horizontal",
+      }}
+    >
+      <Stack.Screen name="GuestRequestMain" component={GuestRequestScreen} />
     </Stack.Navigator>
   );
 }
@@ -852,7 +941,11 @@ function MainTabs({ navigation }) {
       initialRouteName="Home"
     >
       <Tab.Screen name="Home" component={HomeStack} />
-      <Tab.Screen name="Explore" component={ExploreStack} options={{ unmountOnBlur: true }} />
+      <Tab.Screen
+        name="Explore"
+        component={ExploreStack}
+        options={{ unmountOnBlur: true }}
+      />
       {isHost && <Tab.Screen name="Host" component={HostStack} />}
       <Tab.Screen name="Bookings" component={BookingsStack} />
       <Tab.Screen
@@ -867,21 +960,22 @@ function MainTabs({ navigation }) {
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <StatusBar style="auto" />
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="ProfileStack" component={ProfileStack} />
-          <Stack.Screen name="BecomeHostStack" component={BecomeHostStack} />
-          <Stack.Screen name="WishlistStack" component={WishlistStack} />
-          <Stack.Screen
-            name="GuestRequestScreen"
-            component={GuestRequestScreen}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <ToastProvider>
+        <WishlistProvider>
+          <NavigationContainer>
+            <StatusBar style="auto" />
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="MainTabs" component={MainTabs} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Register" component={RegisterScreen} />
+              <Stack.Screen name="ProfileStack" component={ProfileStack} />
+              <Stack.Screen name="BecomeHostStack" component={BecomeHostStack} />
+              <Stack.Screen name="WishlistStack" component={WishlistStack} />
+              <Stack.Screen name="GuestRequestStack" component={GuestRequestStack} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </WishlistProvider>
+      </ToastProvider>
     </AuthProvider>
   );
 }
@@ -894,15 +988,18 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveSize(6, 8, 10, 12),
     borderTopWidth: 1,
     borderTopColor: "#e5e7eb",
-    ...getShadow('md'),
+    ...getShadow("md"),
   },
   tabItem: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: Platform.OS === 'android' ? 0 : getResponsiveSize(6, 8, 10, 12),
-    paddingHorizontal: Platform.OS === 'android' ? 0 : getResponsiveSize(10, 12, 14, 16),
+    paddingVertical:
+      Platform.OS === "android" ? 0 : getResponsiveSize(6, 8, 10, 12),
+    paddingHorizontal:
+      Platform.OS === "android" ? 0 : getResponsiveSize(10, 12, 14, 16),
     borderRadius: getResponsiveSize(12, 14, 16, 18),
-    minWidth: Platform.OS === 'android' ? undefined : getResponsiveSize(50, 55, 60, 65),
+    minWidth:
+      Platform.OS === "android" ? undefined : getResponsiveSize(50, 55, 60, 65),
     backgroundColor: "transparent",
     transition: "all 0.2s ease",
   },
