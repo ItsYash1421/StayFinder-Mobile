@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "StayFinderMobile",
+    "slug": "StayFinderMobile",
+    "owner": "yash1421",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "bundleIdentifier": "com.yashkumarmeena.stayfindermobile",
+      "supportsTablet": true,
+      "config": {
+        "googleSignIn": {
+          "reservedClientId": "com.googleusercontent.apps.749009970460-gqv180tsfd00hiokv3ca39q7eeis2130"
+        }
+      }
+    },
+    "android": { 
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.yashkumarmeena.stayfindermobile",
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-web-browser"],
+    "scheme": "stayfindermobile",
+    "extra": {
+      "eas": {
+        "projectId": "541f90a7-c5b6-4aab-8f9c-aeaca54cd265"
+      }
+    }
+  }
+}
